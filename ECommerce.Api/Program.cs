@@ -12,7 +12,10 @@ using System.Threading.RateLimiting;
 var bootstrapAdmin = args.Contains("--bootstrap-admin", StringComparer.Ordinal);
 var builder = WebApplication.CreateBuilder(args.Where(argument => argument != "--bootstrap-admin").ToArray());
 var connectionString = builder.Configuration.GetConnectionString("ECommerce")
-    ?? "Host=localhost;Port=5432;Database=ecommerce;Username=postgres";
+    ?? throw new InvalidOperationException(
+        "ConnectionStrings:ECommerce is required. Configure User Secrets or ConnectionStrings__ECommerce. See README.md.");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("ConnectionStrings:ECommerce must not be empty.");
 
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddHttpContextAccessor();
@@ -85,3 +88,5 @@ app.MapGet("/", () => Results.Ok(new
     health = "/health/ready"
 }));
 app.Run();
+
+public partial class Program { }

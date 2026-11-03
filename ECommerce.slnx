@@ -3,4 +3,8 @@
   <Project Path="ECommerce.Application/ECommerce.Application.csproj" />
   <Project Path="ECommerce.Domain/ECommerce.Domain.csproj" />
   <Project Path="ECommerce.Infrastructure/ECommerce.Infrastructure.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/ECommerce.UnitTests/ECommerce.UnitTests.csproj" />
+    <Project Path="tests/ECommerce.IntegrationTests/ECommerce.IntegrationTests.csproj" />
+  </Folder>
 </Solution>
