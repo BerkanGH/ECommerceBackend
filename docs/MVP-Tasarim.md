@@ -83,10 +83,15 @@ Beklenmeyen hatalarda istemciye iç sistem ayrıntıları gönderilmeyecek.
 
 İlk üç madde kapsamında katalog domain modeli, PostgreSQL migration/eşlemeleri,
 repository'ler, MediatR command/query handler'ları ve katalog endpoint'leri eklendi.
-Silme/pasifleştirme henüz uygulanmadı. Kimlik doğrulama, sepet ve sipariş açık işlerdir.
-Katalog yazma işlemleri kimlik doğrulama tamamlanana kadar yalnızca açıkça etkin
-Development ortamında localhost üzerinden kullanılabilir; üretimde kapalıdır.
+Silme/pasifleştirme henüz uygulanmadı. Dördüncü madde kapsamında Identity ile
+Customer/Admin rolleri, kayıt, giriş, token yenileme, profil, parola değiştirme
+ve çıkış eklendi. Katalog yazma işlemleri her ortamda Admin rolü gerektirir.
+Yönetici yalnızca ayrı bootstrap komutuyla oluşturulur; kayıt isteği rol seçemez.
+Sepet ve sipariş açık işlerdir.
 
 Geçici PostgreSQL 18 örneğinde 35 HTTP kontrolü, 4 kalıcılık/eşzamanlılık kontrolü
 ve 2 üretim güvenlik sınırı kontrolü geçti. Kalıcı otomatik test projesi henüz yok.
+Identity bölümünde 49 HTTP kontrolü ve mevcut müşterinin bootstrap ile yöneticiye
+yükseltilemediği ayrıca doğrulandı. Eski katalog verisi migration sırasında korundu.
+Önceki üretim 503 sınırı artık geçerli değildir; yeni davranış 401/403'tür.
 Bu belge tamamlanmış MVP iddiası değil, kapsam ve ilerleme kaydıdır.

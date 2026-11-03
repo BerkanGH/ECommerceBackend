@@ -6,7 +6,8 @@
 
 Katalog API'si uygulandı: kategori oluşturma/güncelleme/listeleme; ürün oluşturma,
 güncelleme, detay ve sayfalı listeleme; ürüne özel seçenek/değer ekleme; varyant
-oluşturma; TRY/USD fiyat ve stok güncelleme. Kullanıcı, sepet ve sipariş henüz yok.
+oluşturma; TRY/USD fiyat ve stok güncelleme. Identity ile müşteri kaydı, giriş,
+token yenileme, profil, parola değiştirme ve çıkış eklendi. Sepet ve sipariş henüz yok.
 
 ## Mimari
 
@@ -46,11 +47,13 @@ OpenAPI JSON bir sözleşme belgesidir; Swagger UI henüz kurulmadı.
 
 ### Güvenlik sınırı
 
-Kimlik doğrulama henüz eklenmediği için katalog yazma endpoint'leri yalnızca
-Development ortamında, Catalog:EnableDevelopmentWrites=true iken ve localhost'tan
-gelen isteklerde açıktır. Diğer ortamlarda 503 döner. Bu geçici sınır yönetici
-yetkilendirmesinin yerine geçmez; mevcut sürüm üretime hazır değildir.
-Development ayarını internete açık bir deployment'ta kullanmayın.
+Katalog okuma endpoint'leri herkese açıktır. Yazma endpoint'leri her ortamda
+Admin rolü ister. Tokensız istek 401, Customer rolüyle yazma isteği 403 döner.
+Geçici Development yazma izni kaldırıldı; eski ayarla yetkilendirme atlanamaz.
+
+İlk yöneticiyi oluşturmak ve giriş yapmak için docs/Identity.md rehberini izleyin.
+Gerçek parolaları .http dosyalarına kaydetmeyin. E-posta doğrulama, parola kurtarma,
+MFA ve üretim dağıtım sertleştirmesi henüz yok; mevcut sürüm üretime hazır değildir.
 
 ### MediatR lisansı
 
@@ -120,8 +123,10 @@ kontrol etmek eşzamanlı isteklerde benzersizlik garantisi vermez.
 Katalog akışı geçici PostgreSQL 18 örneğinde HTTP istekleriyle doğrulandı.
 Kalıcı otomatik test projesi henüz yok; geçici kontroller CI testi değildir.
 
-Sonraki aşama: Identity, müşteri/yönetici yetkileri ve geçici Development yazma
-korumasının gerçek yetkilendirmeyle değiştirilmesi. Ardından sepet, sipariş,
-idempotency ve stok azaltma/iptal akışları uygulanacak.
+Identity aşamasında kayıt, giriş, refresh, rol koruması, parola değiştirme, çıkış,
+hesap kilidi ve istek sınırlama geçici PostgreSQL üzerinde doğrulandı.
+Auth istek örnekleri ECommerce.Api/Identity.http dosyasında bulunur.
+
+Sonraki aşama: sepet, sipariş, idempotency ve stok azaltma/iptal akışları.
 
 Ayrıntılı kapsam: docs/MVP-Tasarim.md.

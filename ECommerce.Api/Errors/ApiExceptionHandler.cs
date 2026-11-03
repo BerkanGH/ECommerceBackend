@@ -1,4 +1,5 @@
 using ECommerce.Application.Common;
+using ECommerce.Application.Identity;
 using ECommerce.Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -15,8 +16,12 @@ public sealed class ApiExceptionHandler(IProblemDetailsService problems, ILogger
         var (status, title, detail) = exception switch
         {
             NotFoundException => (404, "Resource not found", exception.Message),
+            UnauthorizedAccessException => (401, "Authentication required", "A valid account is required."),
+            AccountValidationException => (400, "Account validation failed", "Check the supplied account details."),
             ArgumentException => (400, "Invalid request", exception.Message),
             DbUpdateConcurrencyException => (409, "Concurrent modification", "The product changed. Reload it and retry."),
+            DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: "EmailIndex" or "UserNameIndex" } } =>
+                (409, "Duplicate account", "An account with this email already exists."),
             DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } =>
                 (409, "Duplicate resource", "SKU, option value or variant combination already exists."),
             DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation } } =>
@@ -31,16 +36,17 @@ public sealed class ApiExceptionHandler(IProblemDetailsService problems, ILogger
         if (status >= 500)
             logger.LogError(exception, "Request failed with status {Status}", status);
         context.Response.StatusCode = status;
+        ProblemDetails details = exception is AccountValidationException validation
+            ? new ValidationProblemDetails(validation.Errors.ToDictionary(pair => pair.Key, pair => pair.Value))
+            : new ProblemDetails();
+        details.Status = status;
+        details.Title = title;
+        details.Detail = detail;
+        details.Extensions["traceId"] = context.TraceIdentifier;
         await problems.WriteAsync(new ProblemDetailsContext
         {
             HttpContext = context,
-            ProblemDetails = new ProblemDetails
-            {
-                Status = status,
-                Title = title,
-                Detail = detail,
-                Extensions = { ["traceId"] = context.TraceIdentifier }
-            }
+            ProblemDetails = details
         });
         return true;
     }

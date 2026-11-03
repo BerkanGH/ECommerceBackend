@@ -1,0 +1,50 @@
+@baseUrl = http://localhost:5106
+@email = EPOSTANIZ
+@password = PAROLANIZ
+@newPassword = YENI_PAROLANIZ
+@accessToken = GIRIS_YANITINDAKI_ACCESS_TOKEN
+@refreshToken = GIRIS_YANITINDAKI_REFRESH_TOKEN
+
+### Müşteri kaydı
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Giriş
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Kendi profilim
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+### Token yenile
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Parola değiştir
+POST {{baseUrl}}/api/auth/change-password
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "{{password}}",
+  "newPassword": "{{newPassword}}"
+}
+
+### Bütün refresh oturumlarını iptal et
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer {{accessToken}}

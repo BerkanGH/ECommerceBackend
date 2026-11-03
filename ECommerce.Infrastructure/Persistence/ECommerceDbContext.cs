@@ -1,11 +1,14 @@
 using ECommerce.Application.Abstractions;
 using ECommerce.Domain.Entities;
+using ECommerce.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce.Infrastructure.Persistence;
 
 public sealed class ECommerceDbContext(DbContextOptions<ECommerceDbContext> options)
-    : DbContext(options), IUnitOfWork
+    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options), IUnitOfWork
 {
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
@@ -13,6 +16,7 @@ public sealed class ECommerceDbContext(DbContextOptions<ECommerceDbContext> opti
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ECommerceDbContext).Assembly);
     }
 

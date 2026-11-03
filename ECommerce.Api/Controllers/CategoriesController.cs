@@ -1,9 +1,10 @@
 using ECommerce.Api.Contracts;
-using ECommerce.Api.Filters;
+using ECommerce.Application.Identity;
 using ECommerce.Application.Categories;
 using ECommerce.Application.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ECommerce.Api.Controllers;
 
@@ -16,7 +17,7 @@ public sealed class CategoriesController(ISender sender) : ControllerBase
         sender.Send(new ListCategoriesQuery(page, pageSize), cancellationToken);
 
     [HttpPost]
-    [DevelopmentCatalogWrite]
+    [Authorize(Roles = AccountRoles.Admin)]
     public async Task<ActionResult<CategoryDto>> Create(CategoryRequest request, CancellationToken cancellationToken)
     {
         var category = await sender.Send(new CreateCategoryCommand(request.Name, request.Description), cancellationToken);
@@ -24,7 +25,7 @@ public sealed class CategoriesController(ISender sender) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [DevelopmentCatalogWrite]
+    [Authorize(Roles = AccountRoles.Admin)]
     public Task<CategoryDto> Update(Guid id, CategoryRequest request, CancellationToken cancellationToken) =>
         sender.Send(new UpdateCategoryCommand(id, request.Name, request.Description), cancellationToken);
 }

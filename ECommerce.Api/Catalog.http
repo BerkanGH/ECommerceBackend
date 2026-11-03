@@ -1,4 +1,5 @@
 @baseUrl = http://localhost:5106
+@accessToken = YONETICI_GIRIS_YANITINDAKI_ACCESS_TOKEN
 @categoryId = KATEGORI_KIMLIGI
 @productId = URUN_KIMLIGI
 @blackValueId = SIYAH_DEGER_KIMLIGI
@@ -7,6 +8,7 @@
 
 ### Kategori oluştur
 POST {{baseUrl}}/api/categories
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
@@ -16,6 +18,7 @@ Content-Type: application/json
 
 ### Ürün oluştur
 POST {{baseUrl}}/api/products
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
@@ -26,6 +29,7 @@ Content-Type: application/json
 
 ### Renk seçenekleri
 POST {{baseUrl}}/api/products/{{productId}}/options
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
@@ -35,6 +39,7 @@ Content-Type: application/json
 
 ### Beden seçenekleri
 POST {{baseUrl}}/api/products/{{productId}}/options
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
@@ -44,6 +49,7 @@ Content-Type: application/json
 
 ### Siyah / M varyantı
 POST {{baseUrl}}/api/products/{{productId}}/variants
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
@@ -64,6 +70,7 @@ GET {{baseUrl}}/api/products?categoryId={{categoryId}}&search=Basic&page=1&pageS
 
 ### TRY fiyatını güncelle
 PUT {{baseUrl}}/api/products/{{productId}}/variants/{{variantId}}/price
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
@@ -73,6 +80,7 @@ Content-Type: application/json
 
 ### Stok güncelle
 PUT {{baseUrl}}/api/products/{{productId}}/variants/{{variantId}}/stock
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
