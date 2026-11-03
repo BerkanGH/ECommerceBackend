@@ -22,7 +22,7 @@ public sealed class CartViewBuilder(ICartCatalogReader catalog)
                     null, null, 0, [], false, "variant_unavailable");
 
             var price = variant.Prices.SingleOrDefault(price => price.Currency == cart.Currency);
-            var issue = price is null ? "price_unavailable"
+            var issue = !variant.IsActive ? "product_inactive" : price is null ? "price_unavailable"
                 : item.Quantity > variant.StockQuantity ? "insufficient_stock" : null;
             return new CartItemDto(variant.Id, variant.ProductId, variant.ProductName, variant.Sku,
                 item.Quantity, price?.Amount, price?.Amount * item.Quantity, variant.StockQuantity,

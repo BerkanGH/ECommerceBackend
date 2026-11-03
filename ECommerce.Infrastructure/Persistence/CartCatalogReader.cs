@@ -23,7 +23,7 @@ public sealed class CartCatalogReader(ECommerceDbContext context) : ICartCatalog
             from variant in context.ProductVariants.AsNoTracking()
             join product in context.Products.AsNoTracking() on variant.ProductId equals product.Id
             where ids.Contains(variant.Id)
-            select new { variant.Id, variant.ProductId, ProductName = product.Name, variant.Sku, variant.StockQuantity }
+            select new { variant.Id, variant.ProductId, ProductName = product.Name, product.IsActive, variant.Sku, variant.StockQuantity }
         ).ToArrayAsync(cancellationToken);
 
         var prices = await context.Set<ProductVariantPrice>().AsNoTracking()
@@ -49,6 +49,6 @@ public sealed class CartCatalogReader(ECommerceDbContext context) : ICartCatalog
             optionsByVariant[variant.Id].OrderBy(option => option.Name)
                 .Select(option => new CartSelectionDto(option.Name, option.Value)).ToArray(),
             pricesByVariant[variant.Id].OrderBy(price => price.Currency)
-                .Select(price => new CartPriceSnapshot(price.Currency, price.Amount)).ToArray()));
+                .Select(price => new CartPriceSnapshot(price.Currency, price.Amount)).ToArray(), variant.IsActive));
     }
 }

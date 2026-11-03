@@ -37,9 +37,11 @@ public sealed class ProductRepository(ECommerceDbContext context) : IProductRepo
     public void Add(Product product) => context.Products.Add(product);
 
     public async Task<PagedResult<ProductSummaryDto>> ListAsync(
-        Guid? categoryId, string? search, int page, int pageSize, CancellationToken cancellationToken)
+        Guid? categoryId, string? search, int page, int pageSize, bool includeInactive, CancellationToken cancellationToken)
     {
         var query = context.Products.AsNoTracking();
+        if (!includeInactive)
+            query = query.Where(product => product.IsActive);
         if (categoryId.HasValue)
             query = query.Where(product => product.CategoryId == categoryId.Value);
         if (!string.IsNullOrWhiteSpace(search))
@@ -51,7 +53,7 @@ public sealed class ProductRepository(ECommerceDbContext context) : IProductRepo
         var count = await query.CountAsync(cancellationToken);
         var items = await query.OrderBy(product => product.Name).ThenBy(product => product.Id)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(product => new ProductSummaryDto(product.Id, product.CategoryId, product.Name, product.Description))
+            .Select(product => new ProductSummaryDto(product.Id, product.CategoryId, product.Name, product.Description, product.IsActive))
             .ToArrayAsync(cancellationToken);
         return new PagedResult<ProductSummaryDto>(items, count, page, pageSize);
     }

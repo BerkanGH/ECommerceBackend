@@ -1,4 +1,5 @@
 using ECommerce.Api.Errors;
+using ECommerce.Api.Health;
 using ECommerce.Api.Identity;
 using ECommerce.Application.Abstractions;
 using ECommerce.Application.Categories;
@@ -49,6 +50,7 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddHealthChecks().AddCheck<DatabaseReadinessCheck>("database");
 
 await using var app = builder.Build();
 if (bootstrapAdmin)
@@ -74,4 +76,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapGet("/health/live", () => Results.Ok(new { status = "alive" }));
+app.MapHealthChecks("/health/ready");
+app.MapGet("/", () => Results.Ok(new
+{
+    name = "ECommerceBackend",
+    version = "1.0",
+    documentation = app.Environment.IsDevelopment() ? "/openapi/v1.json" : null,
+    health = "/health/ready"
+}));
 app.Run();

@@ -3,4 +3,10 @@
 .vs/
 *.user
 .env
+.env.*
+!.env.example
+*.pfx
+*.p12
+**/secrets.json
+.artifacts/
 *.local.json

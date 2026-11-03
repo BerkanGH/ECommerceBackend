@@ -95,6 +95,7 @@ Issue değerleri:
 - insufficient_stock: istenen adet mevcut stoktan fazla.
 - price_unavailable: sepetin para biriminde fiyat yok.
 - variant_unavailable: varyant okunamıyor; ileriye dönük savunmacı görünüm.
+- product_inactive: yönetici ürünü satıştan kaldırmış; satır silinebilir ama satın alınamaz.
 
 Normal akışta foreign key kısıtları sepetteki varyantın fiziksel silinmesini engeller.
 CanCheckout=false olan satırlar otomatik silinmez; müşteri problemi görebilir.

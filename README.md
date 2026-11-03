@@ -1,6 +1,6 @@
 # ECommerceBackend
 
-.NET 10 ile dört katmanlı, tek satıcılı e-ticaret MVP çalışması.
+.NET 10 ile dört katmanlı, tek satıcılı, işlevsel e-ticaret backend MVP'si.
 
 ## Mevcut kapsam
 
@@ -10,6 +10,10 @@ oluşturma; TRY/USD fiyat ve stok güncelleme. Identity ile müşteri kaydı, gi
 token yenileme, profil, parola değiştirme ve çıkış eklendi. Müşteriye özel sepet,
 varyant/adet yönetimi ve tek para birimli TRY/USD toplamları tamamlandı. Sipariş,
 stok düşme, iptal ve yönetici onay/kargo/teslim akışı eklendi.
+
+Ürün pasifleştirme/yeniden açma, hazır olma kontrolü, Docker hazırlığı ve CI
+derleme/migration doğrulaması da eklendi. Gerçek ödeme/kargo entegrasyonu ve
+üretim sertleştirmesi kapsam dışıdır; bu bir production-ready mağaza iddiası değildir.
 
 ## Mimari
 
@@ -33,8 +37,8 @@ PowerShell, solution dizininde:
 dotnet restore ECommerce.slnx
 dotnet tool restore
 dotnet user-secrets set "ConnectionStrings:ECommerce" "Host=localhost;Port=5432;Database=ecommerce;Username=KULLANICI;Password=PAROLA" --project ECommerce.Api
-dotnet ef database update --project ECommerce.Infrastructure --startup-project ECommerce.Api
-dotnet run --project ECommerce.Api --launch-profile http
+dotnet ef database update --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release
+dotnet run --project ECommerce.Api --configuration Release --launch-profile http
 ```
 
 Migration komutunu yalnızca bu projeye ayrılmış veritabanına uygulayın. API
@@ -44,8 +48,11 @@ için ConnectionStrings__ECommerce kullanılabilir.
 API: http://localhost:5106
 OpenAPI JSON: http://localhost:5106/openapi/v1.json
 Liveness: http://localhost:5106/health/live (veritabanı bağlantısını ölçmez).
+Readiness: http://localhost:5106/health/ready (veritabanı ve bekleyen migration kontrolü).
 
-OpenAPI JSON bir sözleşme belgesidir; Swagger UI henüz kurulmadı.
+OpenAPI JSON bir sözleşme belgesidir; bu MVP'de ayrıca Swagger UI kurulmadı.
+Kurulum seçenekleri ve teslim kontrol listesi: docs/Operations.md.
+Doğrulama kapsamı ve sınırları: docs/Validation.md.
 
 ### Güvenlik sınırı
 
@@ -140,5 +147,20 @@ güncellemeleri kapsadı. Önceki 16 katalog domain kontrolü de tekrar geçti.
 Sipariş akışı: docs/Orders.md. HTTP örnekleri: ECommerce.Api/Orders.http.
 58 sipariş HTTP/eşzamanlılık kontrolü geçti. Gerçek ödeme ve kargo sağlayıcısı
 entegrasyonu yoktur; Pending/Confirmed ödeme alındığı anlamına gelmez.
+
+## Ürün pasifleştirme
+
+Admin GET /api/admin/products ile pasif ürünleri de görebilir.
+PUT /api/admin/products/{id}/availability gövdesinde isActive true/false verilir.
+Pasif ürün genel listeden/detaydan gizlenir, sepete eklenemez veya sipariş edilemez.
+Mevcut sepet satırı product_inactive olarak işaretlenir. Geçmiş sipariş ve iptal
+stoğu korunur; fiziksel silme endpoint'i bilerek sunulmaz.
+
+## MVP teslimi
+
+Katalog + Identity + sepet + sipariş yaşam döngüsü tamamlandı. Öğrenme rehberi:
+docs/Architecture.md. Projeyi sıfırdan çalıştırma: docs/Operations.md.
+CI tanımı derleme ve PostgreSQL migration zincirini denetler; kalıcı otomatik
+davranış test projesi henüz yoktur ve CI böyle bir test paketi varmış gibi sunulmaz.
 
 Ayrıntılı kapsam: docs/MVP-Tasarim.md.

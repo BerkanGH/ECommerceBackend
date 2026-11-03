@@ -29,7 +29,7 @@ uygulayın. Sonra kendi değerlerinizle:
 ```powershell
 dotnet user-secrets set "AdminBootstrap:Email" "YONETICI_EPOSTANIZ" --project ECommerce.Api
 dotnet user-secrets set "AdminBootstrap:Password" "GUCLU_BENZERSIZ_PAROLANIZ" --project ECommerce.Api
-dotnet run --project ECommerce.Api --launch-profile http -- --bootstrap-admin
+dotnet run --project ECommerce.Api --configuration Release --launch-profile http -- --bootstrap-admin
 dotnet user-secrets remove "AdminBootstrap:Password" --project ECommerce.Api
 dotnet user-secrets remove "AdminBootstrap:Email" --project ECommerce.Api
 ```

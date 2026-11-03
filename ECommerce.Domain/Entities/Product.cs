@@ -16,6 +16,9 @@ public class Product
     public Guid CategoryId { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
+    public bool IsActive { get; private set; } = true;
+
+    public void SetAvailability(bool isActive) => IsActive = isActive;
 
     private Product() { }
 

@@ -26,3 +26,4 @@ public record VariantRequest(
 
 public record PriceRequest([Required, StringLength(3)] string Currency, decimal Amount);
 public record StockRequest([Range(0, int.MaxValue)] int StockQuantity);
+public record ProductAvailabilityRequest([Required] bool? IsActive);

@@ -86,3 +86,25 @@ Content-Type: application/json
 {
   "stockQuantity": 25
 }
+
+### Yönetici pasif ürünleri de görür
+GET {{baseUrl}}/api/admin/products?page=1&pageSize=20
+Authorization: Bearer {{accessToken}}
+
+### Ürünü satıştan kaldır
+PUT {{baseUrl}}/api/admin/products/{{productId}}/availability
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+
+### Ürünü yeniden aç
+PUT {{baseUrl}}/api/admin/products/{{productId}}/availability
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "isActive": true
+}

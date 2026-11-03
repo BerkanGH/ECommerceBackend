@@ -1,0 +1,11 @@
+**/bin
+**/obj
+.vs
+.git
+.github
+.env
+.env.*
+**/*.pfx
+**/*.p12
+**/secrets.json
+.artifacts

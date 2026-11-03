@@ -1,0 +1,48 @@
+name: Build and database validation
+
+"on":
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: ecommerce_ci
+          POSTGRES_USER: ecommerce_ci
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ecommerce_ci -d ecommerce_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ConnectionStrings__ECommerce: Host=localhost;Port=5432;Database=ecommerce_ci;Username=ecommerce_ci;Password=ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - name: Restore and audit packages
+        run: dotnet restore ECommerce.slnx -p:NuGetAudit=true -p:NuGetAuditMode=all -warnaserror
+      - name: Build
+        run: dotnet build ECommerce.slnx --configuration Release --no-restore --warnaserror
+      - name: Restore EF tools
+        run: dotnet tool restore
+      - name: Validate migration snapshot
+        run: dotnet ef migrations has-pending-model-changes --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release --no-build
+      - name: Apply migrations to disposable PostgreSQL
+        run: dotnet ef database update --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release --no-build

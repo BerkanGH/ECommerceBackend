@@ -79,13 +79,13 @@ Beklenmeyen hatalarda istemciye iç sistem ayrıntıları gönderilmeyecek.
 3. Katalog command/query handler'ları ve HTTP endpoint'leri.
 4. Kimlik doğrulama ve yönetici yetkilendirmesi.
 5. Sepet, sipariş, stok ve iptal akışları.
-6. PostgreSQL üzerinde entegrasyon testleri, API belgesi ve kurulum talimatları.
+6. PostgreSQL üzerinde uçtan uca doğrulama, API belgesi ve kurulum talimatları.
 
 ## Mevcut durum
 
 İlk üç madde kapsamında katalog domain modeli, PostgreSQL migration/eşlemeleri,
 repository'ler, MediatR command/query handler'ları ve katalog endpoint'leri eklendi.
-Silme/pasifleştirme henüz uygulanmadı. Dördüncü madde kapsamında Identity ile
+Fiziksel silme yerine ürün pasifleştirme/yeniden açma eklendi. Dördüncü madde kapsamında Identity ile
 Customer/Admin rolleri, kayıt, giriş, token yenileme, profil, parola değiştirme
 ve çıkış eklendi. Katalog yazma işlemleri her ortamda Admin rolü gerektirir.
 Yönetici yalnızca ayrı bootstrap komutuyla oluşturulur; kayıt isteği rol seçemez.
@@ -100,9 +100,16 @@ ve 2 üretim güvenlik sınırı kontrolü geçti. Kalıcı otomatik test projes
 Identity bölümünde 49 HTTP kontrolü ve mevcut müşterinin bootstrap ile yöneticiye
 yükseltilemediği ayrıca doğrulandı. Eski katalog verisi migration sırasında korundu.
 Önceki üretim 503 sınırı artık geçerli değildir; yeni davranış 401/403'tür.
-Bu belge tamamlanmış MVP iddiası değil, kapsam ve ilerleme kaydıdır.
+Fonksiyonel backend MVP tamamlandı. Üretim hazırlığı, gerçek ödeme/kargo,
+kalıcı davranış testleri ve gelişmiş hesap kurtarma ayrıca ele alınmalıdır.
 
 Sepet bölümünde 63 HTTP ve 22 domain/veritabanı kontrolü geçti. Önceki 16 katalog
 domain kontrolü tekrar çalıştırıldı. Kullanıcı izolasyonu, sahte fiyat/kullanıcı
 kimliği, eksik fiyat, stok azalması, TRY/USD ayrımı ve eşzamanlı yazma doğrulandı.
 Kalıcı test projesi ve CI testleri henüz yok. Ayrıntılar: Cart.md.
+
+Son doğrulamada temiz PostgreSQL 18 kurulumunda 49 Identity, 63 sepet,
+58 sipariş/eşzamanlılık, 27 ürün kullanılabilirliği/health ve 27 sipariş domain
+kontrolü geçti. Önceki 22 sepet domain/kalıcılık ve 16 katalog kontrolü de tekrarlandı.
+CI artık derleme ve migration zincirini doğrulayan bir iş akışı içerir; davranış
+kontrollerinin yerine geçen kalıcı test paketi değildir. Ayrıntılar: Validation.md.
