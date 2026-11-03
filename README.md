@@ -8,7 +8,8 @@ Katalog API'si uygulandı: kategori oluşturma/güncelleme/listeleme; ürün olu
 güncelleme, detay ve sayfalı listeleme; ürüne özel seçenek/değer ekleme; varyant
 oluşturma; TRY/USD fiyat ve stok güncelleme. Identity ile müşteri kaydı, giriş,
 token yenileme, profil, parola değiştirme ve çıkış eklendi. Müşteriye özel sepet,
-varyant/adet yönetimi ve tek para birimli TRY/USD toplamları tamamlandı. Sipariş henüz yok.
+varyant/adet yönetimi ve tek para birimli TRY/USD toplamları tamamlandı. Sipariş,
+stok düşme, iptal ve yönetici onay/kargo/teslim akışı eklendi.
 
 ## Mimari
 
@@ -136,6 +137,8 @@ Sepet aşamasında 63 HTTP ve 22 domain/veritabanı kontrolü geçti. Kontroller
 kullanıcı izolasyonu, TRY/USD ayrımı, güncel fiyat/stok görünümü ve eşzamanlı
 güncellemeleri kapsadı. Önceki 16 katalog domain kontrolü de tekrar geçti.
 
-Sonraki aşama: sipariş oluşturma, idempotency ve stok azaltma/iptal akışları.
+Sipariş akışı: docs/Orders.md. HTTP örnekleri: ECommerce.Api/Orders.http.
+58 sipariş HTTP/eşzamanlılık kontrolü geçti. Gerçek ödeme ve kargo sağlayıcısı
+entegrasyonu yoktur; Pending/Confirmed ödeme alındığı anlamına gelmez.
 
 Ayrıntılı kapsam: docs/MVP-Tasarim.md.

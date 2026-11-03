@@ -92,7 +92,8 @@ Yönetici yalnızca ayrı bootstrap komutuyla oluşturulur; kayıt isteği rol s
 Beşinci madde kapsamında müşteriye özel sepet eklendi. Sepet satırları yalnızca
 varyant kimliği ve adet saklar; fiyatlar güncel katalogdan okunur. Sepet tek para
 birimi taşır ve doluyken para birimi değiştirilemez. Sepete ekleme stok rezervasyonu
-değildir. Sipariş oluşturma, idempotency ve stok azaltma/iptal akışları açık işlerdir.
+değildir. Sipariş oluşturma, idempotency, stok düşme/iade ve yönetici
+onay/kargo/teslim durumları uygulandı. Gerçek ödeme ve kargo entegrasyonu kapsam dışıdır.
 
 Geçici PostgreSQL 18 örneğinde 35 HTTP kontrolü, 4 kalıcılık/eşzamanlılık kontrolü
 ve 2 üretim güvenlik sınırı kontrolü geçti. Kalıcı otomatik test projesi henüz yok.

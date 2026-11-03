@@ -16,6 +16,13 @@ public sealed class ApiExceptionHandler(IProblemDetailsService problems, ILogger
         var (status, title, detail) = exception switch
         {
             NotFoundException => (404, "Resource not found", exception.Message),
+            ForbiddenException => (403, "Forbidden", "You do not have permission for this operation."),
+            PostgresException { SqlState: PostgresErrorCodes.SerializationFailure or PostgresErrorCodes.DeadlockDetected } =>
+                (409, "Concurrent modification", "A concurrent transaction conflicted. Reload and retry with the same idempotency key."),
+            DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.SerializationFailure or PostgresErrorCodes.DeadlockDetected } } =>
+                (409, "Concurrent modification", "A concurrent transaction conflicted. Reload and retry with the same idempotency key."),
+            DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: "IX_Orders_UserId_IdempotencyKey" } } =>
+                (409, "Duplicate checkout", "Reload your orders or retry with the same idempotency key."),
             UnauthorizedAccessException => (401, "Authentication required", "A valid account is required."),
             AccountValidationException => (400, "Account validation failed", "Check the supplied account details."),
             ArgumentException => (400, "Invalid request", exception.Message),

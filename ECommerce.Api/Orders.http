@@ -1,0 +1,56 @@
+@baseUrl = http://localhost:5106
+@customerToken = MUSTERI_ACCESS_TOKEN
+@adminToken = YONETICI_ACCESS_TOKEN
+@orderId = SIPARIS_KIMLIGI
+@idempotencyKey = HER_YENI_SIPARIS_ICIN_YENI_GUID
+
+### Güncel sepet toplamını oku
+GET {{baseUrl}}/api/cart
+Authorization: Bearer {{customerToken}}
+
+### Sipariş ver; expectedTotal sepetten alınmalı
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{customerToken}}
+Idempotency-Key: {{idempotencyKey}}
+Content-Type: application/json
+
+{
+  "expectedCurrency": "TRY",
+  "expectedTotal": 499.90,
+  "shippingAddress": {
+    "recipientName": "Alici Adi",
+    "phone": "+90 555 000 0000",
+    "countryCode": "TR",
+    "city": "Istanbul",
+    "postalCode": "34000",
+    "addressLine": "Ornek teslimat adresi"
+  }
+}
+
+### Kendi siparişlerim
+GET {{baseUrl}}/api/orders?page=1&pageSize=20
+Authorization: Bearer {{customerToken}}
+
+### Kendi sipariş detayım
+GET {{baseUrl}}/api/orders/{{orderId}}
+Authorization: Bearer {{customerToken}}
+
+### Siparişi iptal et
+POST {{baseUrl}}/api/orders/{{orderId}}/cancel
+Authorization: Bearer {{customerToken}}
+
+### Yönetici sipariş listesi
+GET {{baseUrl}}/api/admin/orders?status=Pending&page=1&pageSize=20
+Authorization: Bearer {{adminToken}}
+
+### Onayla
+POST {{baseUrl}}/api/admin/orders/{{orderId}}/confirm
+Authorization: Bearer {{adminToken}}
+
+### Kargoya verildi olarak işaretle
+POST {{baseUrl}}/api/admin/orders/{{orderId}}/ship
+Authorization: Bearer {{adminToken}}
+
+### Teslim edildi olarak işaretle
+POST {{baseUrl}}/api/admin/orders/{{orderId}}/deliver
+Authorization: Bearer {{adminToken}}

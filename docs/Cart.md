@@ -10,7 +10,7 @@ fiyat veya toplamla ödeme hesabı yapılmaz.
 Siparişten farklı olarak sepet fiyatı sabitlenmez. Yönetici fiyat değiştirdiğinde
 sonraki sepet okuması güncel fiyatı gösterir. Sipariş oluştururken fiyat ve stok
 yeniden doğrulanmalı, sipariş satırlarına anlık kopyalar alınmalıdır; sipariş
-endpoint'i bu aşamada henüz yoktur.
+endpoint'i /api/orders altında uygulanmıştır.
 
 ## Sahiplik ve roller
 

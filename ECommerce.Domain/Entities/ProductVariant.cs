@@ -66,4 +66,22 @@ public class ProductVariant
 
         StockQuantity = stockQuantity;
     }
+
+    public void DecreaseStock(int quantity)
+    {
+        if (quantity < 1)
+            throw new ArgumentOutOfRangeException(nameof(quantity));
+        if (StockQuantity < quantity)
+            throw new ECommerce.Domain.Exceptions.DomainRuleException("Insufficient stock.");
+        StockQuantity -= quantity;
+    }
+
+    public void IncreaseStock(int quantity)
+    {
+        if (quantity < 1)
+            throw new ArgumentOutOfRangeException(nameof(quantity));
+        if (StockQuantity > int.MaxValue - quantity)
+            throw new ECommerce.Domain.Exceptions.DomainRuleException("Stock capacity would be exceeded.");
+        StockQuantity += quantity;
+    }
 }
