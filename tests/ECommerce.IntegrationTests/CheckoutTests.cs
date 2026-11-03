@@ -36,6 +36,28 @@ public class CheckoutTests(PostgresFixture fixture)
         context.ProductVariants.Where(variant => variant.Id == variantId).Select(variant => variant.StockQuantity).SingleAsync());
 
     [PostgresFact]
+    public async Task Customer_can_browse_buy_and_cancel_a_product()
+    {
+        var product = await fixture.SeedProductAsync(stock: 3);
+        using var customer = await fixture.CreateCustomerAsync();
+        using var detail = await customer.GetAsync($"/api/products/{product.ProductId}");
+        Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+        await AddAsync(customer, product.VariantId, 2);
+        var cart = await customer.GetFromJsonAsync<CartDto>("/api/cart");
+        Assert.Equal(200m, cart!.TotalAmount);
+        using var created = await CheckoutAsync(customer, Guid.NewGuid(), cart.TotalAmount!.Value);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var order = await created.Content.ReadFromJsonAsync<OrderDto>();
+        Assert.Equal(1, await StockAsync(product.VariantId));
+        using var cancelled = await customer.PostAsync($"/api/orders/{order!.Id}/cancel", null);
+        Assert.Equal(HttpStatusCode.OK, cancelled.StatusCode);
+        var history = await customer.GetFromJsonAsync<OrderDto>($"/api/orders/{order.Id}");
+        Assert.Equal("Cancelled", history!.Status);
+        Assert.Equal(3, await StockAsync(product.VariantId));
+        Assert.Empty((await customer.GetFromJsonAsync<CartDto>("/api/cart"))!.Items);
+    }
+
+    [PostgresFact]
     public async Task Checkout_is_atomic_and_retry_does_not_create_a_second_order()
     {
         var product = await fixture.SeedProductAsync();

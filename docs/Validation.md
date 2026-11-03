@@ -18,13 +18,16 @@
 The committed suite replaces the earlier ad-hoc assertion reports:
 
 - 21 xUnit unit tests passed.
-- 16 PostgreSQL integration tests passed.
+- 17 PostgreSQL integration tests passed, including the complete customer
+  registration/login, product read, cart, checkout, and cancellation flow.
 - No tests were skipped when the test connection was supplied.
 - Tests used isolated generated schemas; no application database was reset.
 - The configured native PostgreSQL server was also tested. Afterwards, public
   product/user/order counts remained zero and no generated test schema remained.
 
-These numbers describe the recorded local run. Use dotnet test to obtain current
+These numbers describe the local run on November 3, 2026 (38 tests total).
+The customer flow used the in-process API host and real PostgreSQL, not a manual
+browser session. Use dotnet test to obtain current
 results rather than treating this file as a permanent test badge.
 
 ## CI and Docker
@@ -33,8 +36,11 @@ The original remote workflow at commit f96f252 completed successfully:
 [GitHub Actions run](https://github.com/BerkanGH/ECommerceBackend/actions/runs/41580742220).
 That workflow did not run the new tests.
 
-The updated workflow includes automated tests and container validation. It must
-be pushed and run before its remote status can be reported as successful.
+The updated workflow at commit 4a37697 completed successfully on November 3, 2026:
+[build, tests, and container checks](https://github.com/BerkanGH/ECommerceBackend/actions/runs/41681837762).
+Package restore/audit, Release build, migration snapshot validation, migration
+application, automated tests, Docker image build, and container readiness/catalog
+requests all passed on the GitHub runner.
 Compose configuration was checked: host 5433 maps to container 5432, bound to loopback.
 Docker image build/start was not run locally because the daemon was unavailable.
 

@@ -59,6 +59,7 @@ Compose publishes PostgreSQL on **5433**, so its API connection string must use
 Create an admin with the explicit [bootstrap command](docs/Identity.md).
 Public registration only creates customers. Request examples are in
 `ECommerce.Api/Catalog.http`, `Identity.http`, `Cart.http`, and `Orders.http`.
+For a complete customer walkthrough, see [placing an order](docs/Walkthrough.md).
 
 ## Tests
 
@@ -98,3 +99,6 @@ Logout revokes refresh tokens; an existing access token can remain valid until
 its 15-minute expiry. Deployment also needs TLS, secure Data Protection key storage,
 monitoring, and backups. This is not presented as a production-ready store.
 Review [MediatR's licensing](https://github.com/LuckyPennySoftware/MediatR) before production use.
+
+For a short explanation of the main trade-offs in Turkish, see
+[design discussion notes](docs/Interview.md).
