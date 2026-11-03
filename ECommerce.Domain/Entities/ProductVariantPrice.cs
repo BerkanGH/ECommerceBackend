@@ -1,3 +1,5 @@
+using ECommerce.Domain.Common;
+
 namespace ECommerce.Domain.Entities;
 
 public class ProductVariantPrice
@@ -11,10 +13,7 @@ public class ProductVariantPrice
 
     internal ProductVariantPrice(Guid productVariantId, string currency, decimal amount)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(currency);
-        currency = currency.Trim().ToUpperInvariant();
-        if (currency is not ("TRY" or "USD"))
-            throw new ArgumentException("Only TRY and USD are supported.", nameof(currency));
+        currency = CurrencyCode.Normalize(currency);
 
         Id = Guid.NewGuid();
         ProductVariantId = productVariantId;

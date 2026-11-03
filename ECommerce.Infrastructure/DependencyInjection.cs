@@ -1,4 +1,5 @@
 using ECommerce.Application.Abstractions;
+using ECommerce.Application.Carts;
 using ECommerce.Infrastructure.Persistence;
 using ECommerce.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -32,6 +33,9 @@ public static class DependencyInjection
         services.AddScoped<AdminBootstrapper>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<ICartRepository, CartRepository>();
+        services.AddScoped<ICartCatalogReader, CartCatalogReader>();
+        services.AddScoped<CartViewBuilder>();
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<ECommerceDbContext>());
         return services;
     }

@@ -1,0 +1,55 @@
+@baseUrl = http://localhost:5106
+@accessToken = MUSTERI_GIRIS_YANITINDAKI_ACCESS_TOKEN
+@variantId = KATALOGDAKI_VARYANT_KIMLIGI
+
+### Kendi sepetim
+GET {{baseUrl}}/api/cart
+Authorization: Bearer {{accessToken}}
+
+### Varyant ekle
+POST {{baseUrl}}/api/cart/items
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "productVariantId": "{{variantId}}",
+  "quantity": 2,
+  "currency": "TRY"
+}
+
+### Adedi belirle
+PUT {{baseUrl}}/api/cart/items/{{variantId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "quantity": 3
+}
+
+### Satırı kaldır
+DELETE {{baseUrl}}/api/cart/items/{{variantId}}
+Authorization: Bearer {{accessToken}}
+
+### Sepeti temizle
+DELETE {{baseUrl}}/api/cart
+Authorization: Bearer {{accessToken}}
+
+### Boş sepette USD seç
+PUT {{baseUrl}}/api/cart/currency
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currency": "USD"
+}
+
+### USD fiyatı bulunan varyant ekle
+POST {{baseUrl}}/api/cart/items
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "productVariantId": "{{variantId}}",
+  "quantity": 1,
+  "currency": "USD"
+}

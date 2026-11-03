@@ -17,6 +17,8 @@ Product -> ProductVariant -> ProductVariantOptionValue -> ProductOptionValue
 
 ProductVariant -> ProductVariantPrice
 
+Customer -> Cart -> CartItem -> ProductVariant
+
 Product, seçenek ve kombinasyon bütünlüğünün giriş noktasıdır. Seçenekler ve
 varyantlar Product metotları üzerinden oluşturulur; koleksiyonlar dışarıdan
 değiştirilemez. Varyant her seçenekten tam bir değer içermelidir. Seçeneksiz
@@ -87,7 +89,10 @@ Silme/pasifleştirme henüz uygulanmadı. Dördüncü madde kapsamında Identity
 Customer/Admin rolleri, kayıt, giriş, token yenileme, profil, parola değiştirme
 ve çıkış eklendi. Katalog yazma işlemleri her ortamda Admin rolü gerektirir.
 Yönetici yalnızca ayrı bootstrap komutuyla oluşturulur; kayıt isteği rol seçemez.
-Sepet ve sipariş açık işlerdir.
+Beşinci madde kapsamında müşteriye özel sepet eklendi. Sepet satırları yalnızca
+varyant kimliği ve adet saklar; fiyatlar güncel katalogdan okunur. Sepet tek para
+birimi taşır ve doluyken para birimi değiştirilemez. Sepete ekleme stok rezervasyonu
+değildir. Sipariş oluşturma, idempotency ve stok azaltma/iptal akışları açık işlerdir.
 
 Geçici PostgreSQL 18 örneğinde 35 HTTP kontrolü, 4 kalıcılık/eşzamanlılık kontrolü
 ve 2 üretim güvenlik sınırı kontrolü geçti. Kalıcı otomatik test projesi henüz yok.
@@ -95,3 +100,8 @@ Identity bölümünde 49 HTTP kontrolü ve mevcut müşterinin bootstrap ile yö
 yükseltilemediği ayrıca doğrulandı. Eski katalog verisi migration sırasında korundu.
 Önceki üretim 503 sınırı artık geçerli değildir; yeni davranış 401/403'tür.
 Bu belge tamamlanmış MVP iddiası değil, kapsam ve ilerleme kaydıdır.
+
+Sepet bölümünde 63 HTTP ve 22 domain/veritabanı kontrolü geçti. Önceki 16 katalog
+domain kontrolü tekrar çalıştırıldı. Kullanıcı izolasyonu, sahte fiyat/kullanıcı
+kimliği, eksik fiyat, stok azalması, TRY/USD ayrımı ve eşzamanlı yazma doğrulandı.
+Kalıcı test projesi ve CI testleri henüz yok. Ayrıntılar: Cart.md.

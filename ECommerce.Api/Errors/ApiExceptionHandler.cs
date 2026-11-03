@@ -19,7 +19,9 @@ public sealed class ApiExceptionHandler(IProblemDetailsService problems, ILogger
             UnauthorizedAccessException => (401, "Authentication required", "A valid account is required."),
             AccountValidationException => (400, "Account validation failed", "Check the supplied account details."),
             ArgumentException => (400, "Invalid request", exception.Message),
-            DbUpdateConcurrencyException => (409, "Concurrent modification", "The product changed. Reload it and retry."),
+            DbUpdateConcurrencyException => (409, "Concurrent modification", "The resource changed. Reload it and retry."),
+            DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: "IX_Carts_UserId" or "IX_CartItems_CartId_ProductVariantId" } } =>
+                (409, "Cart conflict", "Your cart changed. Reload it and retry."),
             DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: "EmailIndex" or "UserNameIndex" } } =>
                 (409, "Duplicate account", "An account with this email already exists."),
             DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } =>

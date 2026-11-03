@@ -13,6 +13,7 @@ public sealed class ECommerceDbContext(DbContextOptions<ECommerceDbContext> opti
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
+    public DbSet<Cart> Carts => Set<Cart>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,7 +25,7 @@ public sealed class ECommerceDbContext(DbContextOptions<ECommerceDbContext> opti
     {
         ChangeTracker.DetectChanges();
         foreach (var entry in ChangeTracker.Entries()
-                     .Where(entry => entry.Entity is Product or Category)
+                     .Where(entry => entry.Entity is Product or Category or Cart)
                      .Where(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Unchanged))
         {
             entry.Property("Revision").CurrentValue = Guid.NewGuid();

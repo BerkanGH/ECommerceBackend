@@ -7,7 +7,8 @@
 Katalog API'si uygulandı: kategori oluşturma/güncelleme/listeleme; ürün oluşturma,
 güncelleme, detay ve sayfalı listeleme; ürüne özel seçenek/değer ekleme; varyant
 oluşturma; TRY/USD fiyat ve stok güncelleme. Identity ile müşteri kaydı, giriş,
-token yenileme, profil, parola değiştirme ve çıkış eklendi. Sepet ve sipariş henüz yok.
+token yenileme, profil, parola değiştirme ve çıkış eklendi. Müşteriye özel sepet,
+varyant/adet yönetimi ve tek para birimli TRY/USD toplamları tamamlandı. Sipariş henüz yok.
 
 ## Mimari
 
@@ -82,6 +83,10 @@ MediatR__LicenseKey ortam değişkeniyle verilebilir. Lisans uyarısı gizlenmez
 | PUT | /api/products/{id}/variants/{variantId}/price | Bir para biriminin fiyatını belirle |
 | PUT | /api/products/{id}/variants/{variantId}/stock | Stok miktarını belirle |
 
+Sepet endpoint'leri /api/cart altında ve yalnızca Customer rolüne açıktır.
+Her müşteri kendi sepetine erişir; istemciden kullanıcı kimliği veya fiyat alınmaz.
+Kullanım ve kurallar: docs/Cart.md. Örnek istekler: ECommerce.Api/Cart.http.
+
 Listelerde page=1 ve pageSize=20 varsayılandır; pageSize en fazla 100 olabilir.
 Ürün listesi categoryId ve search parametrelerini destekler. Arama terimindeki
 % ve _ karakterleri joker değil, normal karakter olarak değerlendirilir.
@@ -127,6 +132,10 @@ Identity aşamasında kayıt, giriş, refresh, rol koruması, parola değiştirm
 hesap kilidi ve istek sınırlama geçici PostgreSQL üzerinde doğrulandı.
 Auth istek örnekleri ECommerce.Api/Identity.http dosyasında bulunur.
 
-Sonraki aşama: sepet, sipariş, idempotency ve stok azaltma/iptal akışları.
+Sepet aşamasında 63 HTTP ve 22 domain/veritabanı kontrolü geçti. Kontroller,
+kullanıcı izolasyonu, TRY/USD ayrımı, güncel fiyat/stok görünümü ve eşzamanlı
+güncellemeleri kapsadı. Önceki 16 katalog domain kontrolü de tekrar geçti.
+
+Sonraki aşama: sipariş oluşturma, idempotency ve stok azaltma/iptal akışları.
 
 Ayrıntılı kapsam: docs/MVP-Tasarim.md.
