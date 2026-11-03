@@ -5,6 +5,7 @@ using ECommerce.Application.Identity;
 using ECommerce.Domain.Entities;
 using ECommerce.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +33,8 @@ public sealed class PostgresFixture : IAsyncLifetime
 {
     private string? _previousConnection;
     private string? _adminConnection;
+    private bool _schemaCreated;
+    private bool _environmentChanged;
     private readonly string _schema = "ecommerce_test_" + Guid.NewGuid().ToString("N");
     public TestApplication Factory { get; private set; } = null!;
 
@@ -44,10 +47,12 @@ public sealed class PostgresFixture : IAsyncLifetime
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand($"CREATE SCHEMA \"{_schema}\"", connection);
         await command.ExecuteNonQueryAsync();
+        _schemaCreated = true;
 
         var builder = new NpgsqlConnectionStringBuilder(_adminConnection) { SearchPath = _schema };
         var testConnection = builder.ConnectionString;
         _previousConnection = Environment.GetEnvironmentVariable("ConnectionStrings__ECommerce");
+        _environmentChanged = true;
         Environment.SetEnvironmentVariable("ConnectionStrings__ECommerce", testConnection);
         Factory = new TestApplication(testConnection, _schema);
         await using var scope = Factory.Services.CreateAsyncScope();
@@ -56,20 +61,26 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (Factory is not null)
+        try
         {
-            await Factory.DisposeAsync();
-            Environment.SetEnvironmentVariable("ConnectionStrings__ECommerce", _previousConnection);
+            if (Factory is not null)
+                await Factory.DisposeAsync();
         }
-        if (string.IsNullOrWhiteSpace(_adminConnection))
-            return;
-        if (!_schema.StartsWith("ecommerce_test_", StringComparison.Ordinal) ||
-            !Guid.TryParseExact(_schema["ecommerce_test_".Length..], "N", out _))
-            throw new InvalidOperationException("Refusing to remove an unexpected schema.");
-        await using var connection = new NpgsqlConnection(_adminConnection);
-        await connection.OpenAsync();
-        await using var command = new NpgsqlCommand($"DROP SCHEMA IF EXISTS \"{_schema}\" CASCADE", connection);
-        await command.ExecuteNonQueryAsync();
+        finally
+        {
+            if (_environmentChanged)
+                Environment.SetEnvironmentVariable("ConnectionStrings__ECommerce", _previousConnection);
+            if (_schemaCreated)
+            {
+                if (!_schema.StartsWith("ecommerce_test_", StringComparison.Ordinal) ||
+                    !Guid.TryParseExact(_schema["ecommerce_test_".Length..], "N", out _))
+                    throw new InvalidOperationException("Refusing to remove an unexpected schema.");
+                await using var connection = new NpgsqlConnection(_adminConnection);
+                await connection.OpenAsync();
+                await using var command = new NpgsqlCommand($"DROP SCHEMA IF EXISTS \"{_schema}\" CASCADE", connection);
+                await command.ExecuteNonQueryAsync();
+            }
+        }
     }
 
     public HttpClient CreateClient() => Factory.CreateClient(new WebApplicationFactoryClientOptions
@@ -122,6 +133,7 @@ public sealed class TestApplication(string connection, string schema) : WebAppli
         builder.ConfigureLogging(logging => logging.ClearProviders());
         builder.ConfigureTestServices(services =>
         {
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
             services.RemoveAll<DbContextOptions<ECommerceDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ECommerceDbContext>>();
             services.AddDbContext<ECommerceDbContext>(options =>

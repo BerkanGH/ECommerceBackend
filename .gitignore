@@ -9,4 +9,5 @@
 *.p12
 **/secrets.json
 .artifacts/
+**/TestResults/
 *.local.json

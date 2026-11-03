@@ -1,58 +1,41 @@
-# Son doğrulama kaydı
+# Verification record
 
-## Ortam ve kapsam
+## Local audit
 
-.NET SDK 10.0.101, .NET 10 hedefi ve ayrı, geçici PostgreSQL 18 örneği kullanıldı.
-Asıl kullanıcı veritabanına migration veya veri yazılmadı. Kontroller Release
-çıktısında ve localhost HTTP üzerinden çalıştırıldı. Açık Debug süreci kapatılmadı.
+- PostgreSQL 18 was running on port 5432; Docker's Linux engine was unavailable.
+- No User Secrets connection or connection environment variable was initially set.
+- Npgsql confirmed that the fallback connection lacked the password required by the server.
+- The supplied User Secrets connection authenticated successfully.
+- The target public schema was empty. The five migration scripts were reviewed
+  for destructive statements and applied explicitly, not on API startup.
+- The current Release API returned 200 from /health/live, /health/ready,
+  and /api/products. The product count was zero; no sample products were inserted.
+- The process initially on port 5106 was stale and returned 404 for /health/ready.
+  Updated output was verified on a separate port without assuming that old process reloaded.
 
-Boş veritabanına önce InitialCatalog uygulandı, eski kategori/ürün örneği eklendi,
-sonra kalan migration zinciri tamamlandı. Eski ürün aktif varsayılanıyla korundu.
-Pending migration varken readiness 503, tamamlandıktan sonra 200 döndü.
-Veritabanı kapatıldığında readiness 503, liveness 200 davranışı da doğrulandı.
-Production ortamında müşteri/yönetici rol sınırları ve OpenAPI'nin kapalı olması kontrol edildi.
+## Automated checks
 
-## Tekrarlanan kontrol grupları
+The committed suite replaces the earlier ad-hoc assertion reports:
 
-| Grup | Geçen kontrol |
-|---|---:|
-| Identity HTTP ve yetkilendirme | 49 |
-| Sepet HTTP ve sahiplik | 63 |
-| Sipariş HTTP ve gerçek eşzamanlı istekler | 58 |
-| Ürün pasifleştirme ve health | 27 |
-| Sipariş domain/stock sınırları | 27 |
-| Sepet domain ve PostgreSQL kalıcılık kısıtları | 22 |
-| Önceki katalog domain kontrolleri | 16 |
+- 21 xUnit unit tests passed.
+- 16 PostgreSQL integration tests passed.
+- No tests were skipped when the test connection was supplied.
+- Tests used isolated generated schemas; no application database was reset.
+- The configured native PostgreSQL server was also tested. Afterwards, public
+  product/user/order counts remained zero and no generated test schema remained.
 
-Bu sayılar assertion/kontrol sayılarıdır; repository'de bulunan bir test
-framework'ünün test case sayıları değildir. Geçici kontrol programları kaynak
-koduna veya CI test projesi olarak eklenmedi. Kalıcı otomatik davranış testleri
-henüz yoktur ve bu teknik borç açıkça korunmaktadır.
+These numbers describe the recorded local run. Use dotnet test to obtain current
+results rather than treating this file as a permanent test badge.
 
-## Kritik senaryolar
+## CI and Docker
 
-- Son tek stok için iki müşteri yarıştığında tek sipariş başarılı oldu.
-- Aynı müşteri/anahtarla eşzamanlı checkout aynı siparişi döndürdü.
-- Aynı sipariş için iki eşzamanlı iptal stoğu bir defa iade etti.
-- Stok/fiyat hatasında sepet ve bütün stok satırları korundu.
-- Ürün/fiyat değişiklikleri eski sipariş kopyalarını değiştirmedi.
-- Pasif ürün gizlendi ve satın alınamadı; geçmiş sipariş iptali yine çalıştı.
-- Sahte userId/fiyat ve başka müşterinin sepet/sipariş kimliği yetki sağlamadı.
-- TRY/USD karışmadı; eksik fiyat sıfır veya kur dönüşümü sayılmadı.
-- Silinen sepet satırları reload sonrası geri gelmedi.
-- Concurrency/unique/check constraint hataları veri bütünlüğünü korudu.
+The original remote workflow at commit f96f252 completed successfully:
+[GitHub Actions run](https://github.com/BerkanGH/ECommerceBackend/actions/runs/41580742220).
+That workflow did not run the new tests.
 
-## Yapısal doğrulama
+The updated workflow includes automated tests and container validation. It must
+be pushed and run before its remote status can be reported as successful.
+Compose configuration was checked: host 5433 maps to container 5432, bound to loopback.
+Docker image build/start was not run locally because the daemon was unavailable.
 
-Release build warnings-as-errors ile başarılıydı. EF migration snapshot'ında
-bekleyen model değişikliği bulunmadı. NuGet audit mevcut kaynaklara göre
-kontrol edildi. Compose yapılandırması doğrulandı.
-
-CI YAML sözdizimi ve salt okuma izinleri doğrulandı; remote workflow push edilmeden
-çalıştırılmış sayılmaz. Release publish ve idempotent SQL migration çıktısı üretildi.
-Docker daemon kapalı olduğundan image build/run yapılmadı. Container dosyaları
-hazırlanmış ve Compose sözdizimi kontrol edilmiş olmakla birlikte Docker runtime
-doğrulaması yapılmış gibi sunulmaz.
-
-Bu kayıt production güvenlik sertifikası, yük testi, ödeme/kargo entegrasyon testi
-veya kalıcı regresyon paketi değildir. İşlevsel MVP tesliminin kapsam kaydıdır.
+This record is not a performance, load, or production-security claim.

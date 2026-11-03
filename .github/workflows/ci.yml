@@ -1,4 +1,4 @@
-name: Build and database validation
+name: Build and test
 
 "on":
   push:
@@ -29,6 +29,7 @@ jobs:
           --health-retries 10
     env:
       ConnectionStrings__ECommerce: Host=localhost;Port=5432;Database=ecommerce_ci;Username=ecommerce_ci;Password=ci-${{ github.run_id }}-${{ github.run_attempt }}
+      ECOMMERCE_TEST_CONNECTION: Host=localhost;Port=5432;Database=ecommerce_ci;Username=ecommerce_ci;Password=ci-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -46,3 +47,21 @@ jobs:
         run: dotnet ef migrations has-pending-model-changes --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release --no-build
       - name: Apply migrations to disposable PostgreSQL
         run: dotnet ef database update --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release --no-build
+      - name: Run unit and PostgreSQL integration tests
+        run: dotnet test ECommerce.slnx --configuration Release --no-build --logger trx --results-directory .artifacts/test-results
+      - name: Build API image
+        run: docker build --tag ecommerce-api:ci .
+      - name: Smoke-test development container
+        run: |
+          trap 'docker logs ecommerce-api-ci || true; docker rm --force ecommerce-api-ci || true' EXIT
+          docker run --detach --name ecommerce-api-ci --network host \
+            --env ConnectionStrings__ECommerce \
+            --env ASPNETCORE_ENVIRONMENT=Development ecommerce-api:ci
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:8080/health/ready; then
+              curl --fail --silent http://localhost:8080/api/products > /dev/null
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1

@@ -76,7 +76,5 @@ Kaynaklar:
 
 ## Doğrulama
 
-Geçici PostgreSQL 18 üzerinde 58 HTTP/eşzamanlılık kontrolü geçti. Son stok yarışı,
-aynı anahtarla eşzamanlı checkout, çift iptal, hatada stok/sepet korunması,
-sahiplik, TRY/USD, fiyat onayı ve geçmiş veri kopyaları doğrulandı. Kalıcı test
-projesi henüz yok; bu kontroller CI testi olarak sunulmuyor.
+Checkout, son stok yarışı, çift istek/iptal, sahiplik ve fiyat kopyaları
+kalıcı PostgreSQL testlerinde çalıştırılır. Komutlar: [Testing.md](Testing.md).

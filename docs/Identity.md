@@ -103,7 +103,7 @@ rate limit altyapısı ve güvenilir reverse proxy ayarları ayrıca gereklidir.
 ## Üretim öncesi açık işler
 
 E-posta doğrulama ve parola kurtarma teslimatı, MFA, TLS/reverse proxy ayarları,
-güvenli Data Protection anahtar saklama, yedekleme ve kalıcı otomatik testler
+güvenli Data Protection anahtar saklama, yedekleme ve daha geniş güvenlik testleri
 tamamlanmalıdır. Data Protection anahtarları kaybolursa tokenlar okunamaz;
 birden çok instance aynı uygulama adı ve güvenli paylaşılan anahtar deposunu
 kullanmalıdır. Anahtarları repository'ye koymayın.
@@ -117,12 +117,7 @@ https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity-a
 
 ## Doğrulama kaydı
 
-Geçici PostgreSQL 18 veritabanında 49 Identity HTTP kontrolü ve yönetici tokenıyla
-35 katalog regresyon kontrolü geçti. Production ortamında anonim yazmanın 401,
-müşteri yazmasının 403, yönetici yazmasının 201 ve OpenAPI erişiminin 404 döndüğü
-doğrulandı. Altı eşzamanlı kayıt aynı e-posta için tek Customer hesabı ve beş 409
-yanıtı üretti. Bootstrap'in mevcut müşteriyi yöneticiye yükseltmediği kontrol edildi.
-Eski katalog verisi Identity migration'ından sonra korunmuştu.
-
-Kontroller geçici program ve HTTP istekleriyle yapıldı; kalıcı otomatik test
-projesi veya CI testi olarak sunulmuyor. Kullanıcının asıl veritabanı değiştirilmedi.
+Entegrasyon testleri gerçek kayıt/giriş akışını kullanır; sahte authentication
+handler'ı kullanmaz. Rol ve sahiplik kontrolleri dahil kapsam:
+[Testing.md](Testing.md). Test sayıları ve doğrulama durumu:
+[Validation.md](Validation.md).

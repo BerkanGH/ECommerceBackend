@@ -1,166 +1,100 @@
-# ECommerceBackend
+# ECommerce Backend
 
-.NET 10 ile dört katmanlı, tek satıcılı, işlevsel e-ticaret backend MVP'si.
+A .NET 10 Web API for a single-store catalog, customer carts, and orders.
+This portfolio project focuses on domain rules, authorization, and consistent
+stock updates rather than integrating real payment or shipping providers.
 
-## Mevcut kapsam
+## Features
 
-Katalog API'si uygulandı: kategori oluşturma/güncelleme/listeleme; ürün oluşturma,
-güncelleme, detay ve sayfalı listeleme; ürüne özel seçenek/değer ekleme; varyant
-oluşturma; TRY/USD fiyat ve stok güncelleme. Identity ile müşteri kaydı, giriş,
-token yenileme, profil, parola değiştirme ve çıkış eklendi. Müşteriye özel sepet,
-varyant/adet yönetimi ve tek para birimli TRY/USD toplamları tamamlandı. Sipariş,
-stok düşme, iptal ve yönetici onay/kargo/teslim akışı eklendi.
+- Product-specific options and variants, with separate TRY and USD prices.
+- Customer registration and sign-in using ASP.NET Core Identity bearer tokens.
+- Customer-owned carts with server-calculated prices and a single currency.
+- Transactional checkout, request idempotency, and one-time stock restoration on cancellation.
+- Admin catalog management, product deactivation, and order status transitions.
 
-Ürün pasifleştirme/yeniden açma, hazır olma kontrolü, Docker hazırlığı ve CI
-derleme/migration doğrulaması da eklendi. Gerçek ödeme/kargo entegrasyonu ve
-üretim sertleştirmesi kapsam dışıdır; bu bir production-ready mağaza iddiası değildir.
+## Stack and structure
 
-## Mimari
+ASP.NET Core 10, EF Core 10, PostgreSQL 18, Identity, MediatR, and xUnit.
 
-- Domain: bağımsız iş kuralları, Product üzerinden seçenek ve kombinasyon yönetimi.
-- Application: MediatR command/query handler'ları, DTO ve repository arayüzleri.
-- Infrastructure: EF Core, Npgsql, PostgreSQL eşlemeleri ve repository'ler.
-- Api: controller'lar, istek doğrulama ve ProblemDetails hata cevapları.
+| Project | Responsibility |
+| --- | --- |
+| Domain | Product, cart, and order rules |
+| Application | Commands, queries, DTOs, and persistence interfaces |
+| Infrastructure | EF Core mappings, PostgreSQL queries/locks, and Identity |
+| Api | HTTP endpoints, authentication, and role checks |
+| tests | Unit tests and PostgreSQL-backed API/persistence tests |
 
-Amaca özel repository kullanılır; her tablo için generic CRUD repository yoktur.
-IUnitOfWork, bir kullanım senaryosundaki değişikliklerin birlikte kaydedilmesini
-sağlar. Okuma sorguları DTO'lara yansıtılır; entity'ler HTTP yanıtı olarak verilmez.
+Commands and queries share one database. There is no event sourcing or separate
+read database. See [architecture notes](docs/Architecture.md) for the design.
 
-## Yerel kurulum
+## Run locally
 
-.NET 10 SDK ve çalışan PostgreSQL gerekir. Gerçek kullanıcı adı/parolayı kaynak
-koduna veya appsettings dosyasına yazmayın.
+Requirements: a .NET 10 SDK and a running PostgreSQL server. Create a development
+database named `ecommerce` first. The API never applies migrations automatically.
 
-PowerShell, solution dizininde:
+From the repository root, in PowerShell:
 
 ```powershell
 dotnet restore ECommerce.slnx
 dotnet tool restore
-dotnet user-secrets set "ConnectionStrings:ECommerce" "Host=localhost;Port=5432;Database=ecommerce;Username=KULLANICI;Password=PAROLA" --project ECommerce.Api
+dotnet user-secrets set "ConnectionStrings:ECommerce" "Host=localhost;Port=5432;Database=ecommerce;Username=your_user;Password=your_password" --project ECommerce.Api
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+dotnet ef migrations list --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release
 dotnet ef database update --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release
 dotnet run --project ECommerce.Api --configuration Release --launch-profile http
 ```
 
-Migration komutunu yalnızca bu projeye ayrılmış veritabanına uygulayın. API
-başlangıcında otomatik migration çalıştırılmaz. Ortam değişkeniyle bağlantı vermek
-için ConnectionStrings__ECommerce kullanılabilir.
+Replace the credentials locally; never commit them. User Secrets are for local
+development, not a production secret store. Missing connection configuration
+causes an explicit startup error rather than a silent fallback.
 
-API: http://localhost:5106
-OpenAPI JSON: http://localhost:5106/openapi/v1.json
-Liveness: http://localhost:5106/health/live (veritabanı bağlantısını ölçmez).
-Readiness: http://localhost:5106/health/ready (veritabanı ve bekleyen migration kontrolü).
+- API: http://localhost:5106
+- OpenAPI JSON: http://localhost:5106/openapi/v1.json (Development only)
+- Liveness: `/health/live`; readiness including migrations: `/health/ready`
 
-OpenAPI JSON bir sözleşme belgesidir; bu MVP'de ayrıca Swagger UI kurulmadı.
-Kurulum seçenekleri ve teslim kontrol listesi: docs/Operations.md.
-Doğrulama kapsamı ve sınırları: docs/Validation.md.
+For optional Docker PostgreSQL, use [the setup guide](docs/Operations.md).
+Compose publishes PostgreSQL on **5433**, so its API connection string must use
+5433, not the native installation's 5432. The API does not load `.env` automatically.
 
-### Güvenlik sınırı
+Create an admin with the explicit [bootstrap command](docs/Identity.md).
+Public registration only creates customers. Request examples are in
+`ECommerce.Api/Catalog.http`, `Identity.http`, `Cart.http`, and `Orders.http`.
 
-Katalog okuma endpoint'leri herkese açıktır. Yazma endpoint'leri her ortamda
-Admin rolü ister. Tokensız istek 401, Customer rolüyle yazma isteği 403 döner.
-Geçici Development yazma izni kaldırıldı; eski ayarla yetkilendirme atlanamaz.
+## Tests
 
-İlk yöneticiyi oluşturmak ve giriş yapmak için docs/Identity.md rehberini izleyin.
-Gerçek parolaları .http dosyalarına kaydetmeyin. E-posta doğrulama, parola kurtarma,
-MFA ve üretim dağıtım sertleştirmesi henüz yok; mevcut sürüm üretime hazır değildir.
+Unit tests do not need a database:
 
-### MediatR lisansı
+```powershell
+dotnet test tests/ECommerce.UnitTests --configuration Release
+```
 
-MediatR 14.2.0 kullanılır. Geliştirme/test ve üretim kullanım koşulları aynı değildir.
-Üretimden önce projenize uygun lisansı değerlendirin:
-https://github.com/LuckyPennySoftware/MediatR
-https://luckypennysoftware.com/
+To include PostgreSQL integration tests, provide a development/test connection
+with permission to create schemas:
 
-Gereken lisans anahtarı MediatR:LicenseKey User Secret veya
-MediatR__LicenseKey ortam değişkeniyle verilebilir. Lisans uyarısı gizlenmez.
+```powershell
+$env:ECOMMERCE_TEST_CONNECTION = "Host=localhost;Port=5432;Database=ecommerce_tests;Username=your_user;Password=your_password"
+dotnet test ECommerce.slnx --configuration Release
+```
 
-## Endpoint'ler
+Each integration run creates and removes only its own randomly named schema.
+It does not reset the database or delete existing application tables.
+Without the variable, integration tests are reported as **skipped**, not passed.
+See [test coverage and isolation](docs/Testing.md).
 
-| HTTP | Yol | İşlem |
-|---|---|---|
-| GET | /api/categories | Sayfalı kategori listesi |
-| POST | /api/categories | Kategori oluştur |
-| PUT | /api/categories/{id} | Kategori güncelle |
-| GET | /api/products | Sayfalı ürün listesi |
-| GET | /api/products/{id} | Seçenek/fiyat/varyant içeren detay |
-| POST | /api/products | Ürün oluştur |
-| PUT | /api/products/{id} | Ürün bilgilerini güncelle |
-| POST | /api/products/{id}/options | Değerleriyle seçenek ekle |
-| POST | /api/products/{id}/options/{optionId}/values | Seçeneğe değer ekle |
-| POST | /api/products/{id}/variants | Varyant oluştur |
-| PUT | /api/products/{id}/variants/{variantId}/price | Bir para biriminin fiyatını belirle |
-| PUT | /api/products/{id}/variants/{variantId}/stock | Stok miktarını belirle |
+## CI and Docker
 
-Sepet endpoint'leri /api/cart altında ve yalnızca Customer rolüne açıktır.
-Her müşteri kendi sepetine erişir; istemciden kullanıcı kimliği veya fiyat alınmaz.
-Kullanım ve kurallar: docs/Cart.md. Örnek istekler: ECommerce.Api/Cart.http.
+GitHub Actions is configured to build, check migrations, run both test projects
+against PostgreSQL, and build/smoke-test the API container.
+The Dockerfile uses a multi-stage build and a non-root runtime user.
+See [current verification results](docs/Validation.md) for what was actually run.
 
-Listelerde page=1 ve pageSize=20 varsayılandır; pageSize en fazla 100 olabilir.
-Ürün listesi categoryId ve search parametrelerini destekler. Arama terimindeki
-% ve _ karakterleri joker değil, normal karakter olarak değerlendirilir.
+## Scope and limitations
 
-## Örnek ürün akışı
+Checkout records an order; it does **not** collect money. Confirmation and shipping
+statuses are manual. Real payment/shipping integrations, refunds, email verification,
+password recovery, and MFA are not implemented.
 
-1. Kategori oluşturun; dönen id ile ürün oluşturun.
-2. Ürüne Renk seçeneğini Siyah/Beyaz değerleriyle ekleyin.
-3. Beden seçeneğini M/L değerleriyle ekleyin.
-4. Yanıttaki seçenek değeri kimlikleriyle Siyah/M varyantını oluşturun.
-5. Aynı varyant için TRY ve USD fiyatlarını ayrı girin.
-
-Hazır istek gövdeleri ECommerce.Api/Catalog.http dosyasında bulunur.
-Varyant oluşturduktan sonra seçenek yapısı değiştirilemez. Seçeneksiz ürüne
-optionValueIds=[] gönderilir ve yalnızca bir varsayılan varyant oluşturulabilir.
-API'den varyant oluştururken en az bir fiyat gereklidir; diğer para birimi daha
-sonra eklenebilir.
-
-## Veri bütünlüğü
-
-- Her seçenekten tam bir değer seçilir; başka ürüne ait değer kabul edilmez.
-- SKU mağaza genelinde, kombinasyon ürün içinde benzersizdir.
-- Seçenek adı ve değerler kendi kapsamlarında benzersizdir.
-- Aynı varyant/para birimi için tek fiyat tutulur.
-- Fiyat numeric(18,2) sınırlarında ve negatif olmayan bir tutardır.
-- Stok negatif olamaz.
-- Product ve Category için gölge Revision alanı eşzamanlı güncellemeyi denetler.
-  Alt entity güncellemelerinde de ürünün Revision alanı değiştirilir.
-- SaveChanges içindeki değişiklikler EF Core transaction'ıyla birlikte kaydedilir.
-  Çakışma halinde 409 döner; istemci güncel ürünü tekrar okumalıdır.
-- Ürün ağacı split query ve repeatable-read transaction ile tutarlı okunur;
-  çoklu koleksiyon JOIN'lerinden doğan satır çoğalması önlenir.
-
-Veritabanı kısıtları uygulama kontrollerini tamamlar; yalnızca önce SELECT ile
-kontrol etmek eşzamanlı isteklerde benzersizlik garantisi vermez.
-
-## Doğrulama ve sonraki aşama
-
-Katalog akışı geçici PostgreSQL 18 örneğinde HTTP istekleriyle doğrulandı.
-Kalıcı otomatik test projesi henüz yok; geçici kontroller CI testi değildir.
-
-Identity aşamasında kayıt, giriş, refresh, rol koruması, parola değiştirme, çıkış,
-hesap kilidi ve istek sınırlama geçici PostgreSQL üzerinde doğrulandı.
-Auth istek örnekleri ECommerce.Api/Identity.http dosyasında bulunur.
-
-Sepet aşamasında 63 HTTP ve 22 domain/veritabanı kontrolü geçti. Kontroller,
-kullanıcı izolasyonu, TRY/USD ayrımı, güncel fiyat/stok görünümü ve eşzamanlı
-güncellemeleri kapsadı. Önceki 16 katalog domain kontrolü de tekrar geçti.
-
-Sipariş akışı: docs/Orders.md. HTTP örnekleri: ECommerce.Api/Orders.http.
-58 sipariş HTTP/eşzamanlılık kontrolü geçti. Gerçek ödeme ve kargo sağlayıcısı
-entegrasyonu yoktur; Pending/Confirmed ödeme alındığı anlamına gelmez.
-
-## Ürün pasifleştirme
-
-Admin GET /api/admin/products ile pasif ürünleri de görebilir.
-PUT /api/admin/products/{id}/availability gövdesinde isActive true/false verilir.
-Pasif ürün genel listeden/detaydan gizlenir, sepete eklenemez veya sipariş edilemez.
-Mevcut sepet satırı product_inactive olarak işaretlenir. Geçmiş sipariş ve iptal
-stoğu korunur; fiziksel silme endpoint'i bilerek sunulmaz.
-
-## MVP teslimi
-
-Katalog + Identity + sepet + sipariş yaşam döngüsü tamamlandı. Öğrenme rehberi:
-docs/Architecture.md. Projeyi sıfırdan çalıştırma: docs/Operations.md.
-CI tanımı derleme ve PostgreSQL migration zincirini denetler; kalıcı otomatik
-davranış test projesi henüz yoktur ve CI böyle bir test paketi varmış gibi sunulmaz.
-
-Ayrıntılı kapsam: docs/MVP-Tasarim.md.
+Logout revokes refresh tokens; an existing access token can remain valid until
+its 15-minute expiry. Deployment also needs TLS, secure Data Protection key storage,
+monitoring, and backups. This is not presented as a production-ready store.
+Review [MediatR's licensing](https://github.com/LuckyPennySoftware/MediatR) before production use.

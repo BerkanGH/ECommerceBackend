@@ -1,116 +1,94 @@
-# Kurulum ve teslim
+# Local development and database troubleshooting
 
-## Çalıştırma sırası
+## Choose a PostgreSQL instance
 
-1. Güncel .NET 10 SDK ve PostgreSQL 18 hazırlayın.
-2. ConnectionStrings:ECommerce bilgisini ECommerce.Api için User Secrets'a ekleyin.
-3. dotnet restore ECommerce.slnx ve dotnet tool restore çalıştırın.
-4. Migration'ları uygulayın.
-5. docs/Identity.md içindeki bootstrap komutuyla yöneticiyi oluşturun.
-6. API'yi başlatın; ayrı Customer hesabıyla kayıt olun.
-7. Kataloğu Admin tokenıyla, sepet/siparişi Customer tokenıyla kullanın.
+For this Windows setup, the installed PostgreSQL 18 service is the verified route:
+it listens on localhost:5432. Docker Desktop's engine was unavailable during the
+audit. Docker is optional, not a requirement for running the application or tests.
 
 ```powershell
-dotnet build ECommerce.slnx --configuration Release
-dotnet ef database update --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release
-dotnet run --project ECommerce.Api --configuration Release --launch-profile http
+Get-Service '*postgres*'
+Test-NetConnection localhost -Port 5432
 ```
 
-Visual Studio veya başka terminalde API çalışıyorsa aynı çıktıya build yapılması
-dosya kilidine takılabilir. Önce ilgili uygulamayı durdurun veya ayrı configuration
-kullanın. Release derlemesi ve Development ortamı farklı kavramlardır:
-http launch profile'ı Release derlemesinde de Development ayarlarını kullanır.
+A running service or an open port does not prove that the application can
+authenticate. Verify the database and role with a password prompt:
 
-Connection string, gerçek parola, token, sertifika veya Data Protection anahtarlarını
-repository'ye koymayın. .http dosyalarındaki yer tutucuları gerçek bilgilerle
-değiştirirseniz bu değişiklikleri commit etmeyin. User Secrets yalnızca geliştirme
-içindir; üretimde uygun secret yönetimi gerekir.
+```powershell
+& "C:\Program Files\PostgreSQL\18\bin\psql.exe" --host=localhost --port=5432 --username=your_user --dbname=ecommerce --password -c "SELECT current_database(), current_user;"
+```
 
-## İsteğe bağlı Docker PostgreSQL
+Do not disable authentication or change pg_hba.conf to work around a missing password.
+
+## Configure and migrate
+
+Use the README's User Secrets command, then explicitly select Development so
+EF tools also load the secrets. Review the target database and pending migrations:
+
+```powershell
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+dotnet tool restore
+dotnet ef migrations list --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release
+dotnet ef migrations script --idempotent --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release --output .artifacts/migrations.sql
+dotnet ef database update --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release
+```
+
+Review SQL before applying it to an existing database. The API does not migrate
+on startup. Do not use database reset commands to fix connection failures.
+
+User Secrets live outside Git and are not encrypted. Avoid putting real values
+in README, appsettings, .http files, screenshots, or shell transcripts.
+An environment variable named ConnectionStrings__ECommerce overrides User Secrets.
+
+## Optional Docker database
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-.env içindeki REPLACE_WITH_A_LONG_RANDOM_PASSWORD değerini yerelde değiştirin.
-Sonra:
+Replace the example password in .env locally, then:
 
 ```powershell
+docker info
 docker compose config --quiet
 docker compose up -d postgres
 docker compose ps
+Test-NetConnection localhost -Port 5433
 ```
 
-Varsayılan host portu 5433'tür; kurulu PostgreSQL'in 5432 portuyla çakışmaz.
-Connection string'de Port=5433, Database=ecommerce, Username=ecommerce ve seçtiğiniz
-parolayı kullanın. Ardından normal dotnet migration/API komutlarını çalıştırın.
-Compose yalnızca veritabanını başlatır; API host'ta çalışır.
-.env otomatik olarak dotnet uygulamasına aktarılmaz; User Secrets veya ortam
-değişkeniyle API bağlantısını ayrıca vermelisiniz.
+The defaults are database ecommerce, user ecommerce, and host port 5433. Configure
+the API separately with Host=localhost;Port=5433 and the matching credentials.
+Compose reads .env; ASP.NET Core does not. Never paste the real password into Git.
 
-Veriler postgres_data volume'unda tutulur. docker compose down konteyneri kaldırır
-ama veriyi silmez; down -v kullanmak veritabanını siler. Bu komutu veri kaybı
-istediğinizden emin olmadıkça kullanmayın. POSTGRES_PASSWORD ilk initialization
-içindir; mevcut volume parolasını .env değiştirerek otomatik değiştiremezsiniz.
+The named volume persists data. Do not use docker compose down -v to troubleshoot.
+Changing POSTGRES_PASSWORD in .env does not change an existing database user's password.
 
-## API image
+To build the API image when the Docker engine is available:
 
 ```powershell
 docker build -t ecommerce-api:local .
 ```
 
-Dockerfile .NET 10 SDK ile publish eder, aspnet runtime ve non-root kullanıcıyla
-çalıştırır. Image'a parola eklenmez. Runtime'da ConnectionStrings__ECommerce
-verilmelidir. Konteyner içindeki localhost host bilgisayarını göstermez; uygun
-ağ/host adresi kullanılmalıdır. Host'ta Docker Desktop için host.docker.internal
-adresini kendi bağlantı ortamınıza göre değerlendirin.
+The container needs ConnectionStrings__ECommerce at runtime. localhost inside a
+container is not the host computer; use the appropriate Docker network address.
+Production also requires TLS/reverse-proxy settings and persistent protected
+Data Protection keys. Docker image build/run was not verified locally during this audit.
 
-Image Production ortamında çalışır; HTTPS/TLS reverse proxy, güvenilir forwarded
-headers ayarları ve Data Protection anahtarlarının kalıcı/güvenli saklanması
-operatör sorumluluğudur. Bu dosyalar otomatik üretim deployment'ı değildir.
-Yerel Docker daemon kapalı olduğu için image build/run bu teslimde çalıştırılmadı;
-Compose yapılandırması docker compose config --quiet ile doğrulandı.
+## Diagnosing a 503
 
-## Health
+1. Confirm which instance and port you intend to use: native 5432 or Compose 5433.
+2. Check the API's effective configuration without printing its password.
+3. Test authentication and database existence with psql.
+4. Inspect pending migrations, then apply them deliberately.
+5. Restart an old API process after changing startup-bound configuration.
+6. Request /health/live, /health/ready, and /api/products.
 
-- GET /: servis adı, sürüm ve geliştirme OpenAPI bağlantısı.
-- GET /health/live: süreç çalışıyor mu; JSON 200.
-- GET /health/ready: veritabanına erişilebiliyor ve bütün migration'lar uygulanmış mı.
-- Readiness başarılıysa 200 Healthy, aksi halde 503 Unhealthy düz metin döner.
-- OpenAPI yalnızca Development'ta /openapi/v1.json adresindedir.
-- Hata cevaplarında ProblemDetails kullanılır; traceId log ilişkilendirmesi içindir.
+The original failure here was a missing connection configuration: the API silently
+used a postgres connection without a password, but the server required SCRAM.
+The fallback has been removed. A later configured connection authenticated
+successfully; five pending migrations were reviewed/applied to an empty database.
+The updated API returned 200 from all three endpoints without adding sample products.
 
-## Migration ve CI
-
-Başlangıçta otomatik migration yapılmaz. Yalnızca projeye ayrılan veritabanını
-hedefleyin. Üretimde yedek ve gözden geçirilmiş migration planı kullanın.
-
-```powershell
-dotnet ef migrations has-pending-model-changes --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release
-dotnet ef migrations script --idempotent --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release --output .artifacts/migrations.sql
-```
-
-.github/workflows/ci.yml push/pull request sonrası restore/audit, Release build,
-model snapshot ve geçici PostgreSQL'de bütün migration'ları denetler. CI'deki parola
-sadece geçici runner veritabanına aittir; gerçek bir hesap/parola değildir.
-Workflow henüz push edilmediği için GitHub üzerinde çalıştırılmış sayılmaz.
-Kalıcı otomatik davranış testi projesi yoktur; bu iş akışı onun yerine geçmez.
-
-## İşlevsel teslim kontrolü
-
-- Admin kategori, ürün, ürüne özel seçenek, varyant, fiyat ve stok yönetebilir.
-- Admin ürünü pasifleştirip yeniden açabilir.
-- Customer kayıt/giriş, parola değişikliği ve token yenileme yapabilir.
-- Customer yalnızca kendi sepet ve siparişlerine erişebilir.
-- Sipariş fiyatı/adresi anlık kopyadır; stok ve sepet tek transaction'da güncellenir.
-- İdempotency ve çift iptal koruması vardır.
-- Admin onay/kargo/teslim durumlarını yönetebilir.
-- TRY/USD ayrı fiyat ve ayrı sipariş para birimi olarak çalışır.
-
-## Üretim sınırları
-
-Gerçek ödeme, kargo sağlayıcısı, vergi/kargo ücret motoru, e-posta doğrulama,
-parola kurtarma teslimatı, MFA, iade/refund ve çok satıcılı yapı kapsam dışındadır.
-Kalıcı otomatik testler, güvenlik incelemesi, TLS/secret/anahtar yönetimi,
-izleme ve yedekleme üretim öncesi tamamlanmalıdır. Bu proje bir öğrenme/portföy
-backend MVP'sidir; para tahsil eden production-ready sistem olarak sunulmaz.
+Readiness returns plain text Healthy (200) or Unhealthy (503), not JSON.
+Stop the relevant API instance before rebuilding its output files on Windows.
+An old Visual Studio process can still serve old code even after a Release build succeeds.

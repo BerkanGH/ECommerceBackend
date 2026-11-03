@@ -26,7 +26,9 @@ public class PersistenceTests(PostgresFixture fixture)
         Assert.Equal(HttpStatusCode.OK, live.StatusCode);
         Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
         var page = await client.GetFromJsonAsync<PagedResult<ProductSummaryDto>>("/api/products?pageSize=100");
-        Assert.Contains(page!.Items, item => item.Id == product.ProductId);
+        Assert.NotEmpty(page!.Items);
+        var detail = await client.GetFromJsonAsync<ProductDto>($"/api/products/{product.ProductId}");
+        Assert.Equal(product.ProductId, detail!.Id);
         using var anonymousWrite = await client.PostAsJsonAsync("/api/categories", new { name = "Denied" });
         Assert.Equal(HttpStatusCode.Unauthorized, anonymousWrite.StatusCode);
     }
@@ -132,5 +134,28 @@ public class PersistenceTests(PostgresFixture fixture)
             new { productVariantId = product.VariantId, quantity = 1, currency = "USD" });
         Assert.Equal(HttpStatusCode.Conflict, mix.StatusCode);
         Assert.DoesNotContain("Admin", strangerProfile.Roles);
+    }
+
+    [PostgresFact]
+    public async Task Stale_cart_write_cannot_overwrite_another_quantity_update()
+    {
+        var product = await fixture.SeedProductAsync();
+        using var customer = await fixture.CreateCustomerAsync();
+        using var added = await customer.PostAsJsonAsync("/api/cart/items",
+            new { productVariantId = product.VariantId, quantity = 1, currency = "TRY" });
+        added.EnsureSuccessStatusCode();
+        var me = await customer.GetFromJsonAsync<AccountDto>("/api/auth/me");
+        await using var firstScope = fixture.Factory.Services.CreateAsyncScope();
+        await using var secondScope = fixture.Factory.Services.CreateAsyncScope();
+        var firstContext = firstScope.ServiceProvider.GetRequiredService<ECommerceDbContext>();
+        var secondContext = secondScope.ServiceProvider.GetRequiredService<ECommerceDbContext>();
+        var first = (await new CartRepository(firstContext).GetByUserAsync(me!.Id, true, default))!;
+        var second = (await new CartRepository(secondContext).GetByUserAsync(me.Id, true, default))!;
+        first.SetQuantity(product.VariantId, 2);
+        second.SetQuantity(product.VariantId, 3);
+        await ((IUnitOfWork)firstContext).SaveChangesAsync(default);
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => ((IUnitOfWork)secondContext).SaveChangesAsync(default));
+        var cart = await customer.GetFromJsonAsync<CartDto>("/api/cart");
+        Assert.Equal(2, Assert.Single(cart!.Items).Quantity);
     }
 }

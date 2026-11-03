@@ -123,9 +123,5 @@ EF Core'un concurrency ve transaction davranışı:
 
 ## Doğrulama
 
-Geçici PostgreSQL 18 örneğinde 63 HTTP kontrolü ve 22 domain/veritabanı kontrolü
-geçti. Sahte fiyat/kullanıcı kimliği, başka müşterinin sepetine erişim, TRY/USD
-ayrımı, eksik fiyat, stok azalması, adet sınırları, satır silme, kök concurrency
-ve benzersiz/check constraint'ler doğrulandı. Önceki 16 katalog domain kontrolü
-tekrar geçti. Bunlar geçici kontrollerdir; kalıcı test projesi veya CI testi yoktur.
-Kullanıcının gerçek veritabanı değiştirilmedi.
+Sepet kuralları ve PostgreSQL eşzamanlılık testleri artık tests altında kalıcıdır.
+Çalıştırma ve şema izolasyonu: [Testing.md](Testing.md).

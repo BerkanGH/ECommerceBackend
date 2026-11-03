@@ -25,10 +25,10 @@ public class CheckoutTests(PostgresFixture fixture)
         return await client.SendAsync(request);
     }
 
-    private static async Task AddAsync(HttpClient client, Guid variantId, int quantity = 1)
+    private static async Task AddAsync(HttpClient client, Guid variantId, int quantity = 1, string currency = "TRY")
     {
         using var response = await client.PostAsJsonAsync("/api/cart/items",
-            new { productVariantId = variantId, quantity, currency = "TRY", unitPrice = 0.01 });
+            new { productVariantId = variantId, quantity, currency, unitPrice = 0.01 });
         response.EnsureSuccessStatusCode();
     }
 
@@ -195,5 +195,65 @@ public class CheckoutTests(PostgresFixture fixture)
         var history = await customer.GetFromJsonAsync<OrderDto>($"/api/orders/{order.Id}");
         Assert.Equal("Book", Assert.Single(history!.Items).ProductName);
         Assert.Equal(120m, history.TotalAmount);
+    }
+
+    [PostgresFact]
+    public async Task Dollar_checkout_uses_USD_price_and_does_not_fall_back_to_TRY()
+    {
+        var priced = await fixture.SeedProductAsync();
+        var missingPrice = await fixture.SeedProductAsync();
+        await fixture.WithContextAsync(async context =>
+        {
+            await context.Set<ProductVariantPrice>().Where(price =>
+                price.ProductVariantId == missingPrice.VariantId && price.Currency == "USD").ExecuteDeleteAsync();
+            return true;
+        });
+        using var customer = await fixture.CreateCustomerAsync();
+        await AddAsync(customer, priced.VariantId, currency: "USD");
+        using var missing = await customer.PostAsJsonAsync("/api/cart/items",
+            new { productVariantId = missingPrice.VariantId, quantity = 1, currency = "USD" });
+        Assert.Equal(HttpStatusCode.Conflict, missing.StatusCode);
+        var cart = await customer.GetFromJsonAsync<CartDto>("/api/cart");
+        Assert.Equal(5m, cart!.TotalAmount);
+        var payload = Request(5) with { ExpectedCurrency = "USD" };
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/orders") { Content = JsonContent.Create(payload) };
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        using var response = await customer.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var order = await response.Content.ReadFromJsonAsync<OrderDto>();
+        Assert.Equal("USD", order!.Currency);
+        Assert.Equal(5m, order.TotalAmount);
+        Assert.Equal(10, await StockAsync(missingPrice.VariantId));
+    }
+
+    [PostgresFact]
+    public async Task Inactive_product_cannot_be_purchased_but_past_order_can_be_cancelled()
+    {
+        var product = await fixture.SeedProductAsync();
+        using var customer = await fixture.CreateCustomerAsync();
+        await AddAsync(customer, product.VariantId);
+        async Task SetActive(bool active) => await fixture.WithContextAsync(async context =>
+        {
+            var entity = await context.Products.SingleAsync(candidate => candidate.Id == product.ProductId);
+            entity.SetAvailability(active);
+            await ((IUnitOfWork)context).SaveChangesAsync(default);
+            return true;
+        });
+        await SetActive(false);
+        using var hidden = await customer.GetAsync($"/api/products/{product.ProductId}");
+        Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+        var cart = await customer.GetFromJsonAsync<CartDto>("/api/cart");
+        Assert.Equal("product_inactive", Assert.Single(cart!.Items).Issue);
+        using var rejected = await CheckoutAsync(customer, Guid.NewGuid(), 100);
+        Assert.Equal(HttpStatusCode.Conflict, rejected.StatusCode);
+        Assert.Equal(10, await StockAsync(product.VariantId));
+        await SetActive(true);
+        using var created = await CheckoutAsync(customer, Guid.NewGuid(), 100);
+        var order = await created.Content.ReadFromJsonAsync<OrderDto>();
+        Assert.NotNull(order);
+        await SetActive(false);
+        using var cancelled = await customer.PostAsync($"/api/orders/{order.Id}/cancel", null);
+        Assert.Equal(HttpStatusCode.OK, cancelled.StatusCode);
+        Assert.Equal(10, await StockAsync(product.VariantId));
     }
 }
