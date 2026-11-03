@@ -1,0 +1,80 @@
+@baseUrl = http://localhost:5106
+@categoryId = KATEGORI_KIMLIGI
+@productId = URUN_KIMLIGI
+@blackValueId = SIYAH_DEGER_KIMLIGI
+@mediumValueId = M_DEGER_KIMLIGI
+@variantId = VARYANT_KIMLIGI
+
+### Kategori oluştur
+POST {{baseUrl}}/api/categories
+Content-Type: application/json
+
+{
+  "name": "Giyim",
+  "description": "Giyim ürünleri"
+}
+
+### Ürün oluştur
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{
+  "categoryId": "{{categoryId}}",
+  "name": "Basic Tişört",
+  "description": "Pamuklu tişört"
+}
+
+### Renk seçenekleri
+POST {{baseUrl}}/api/products/{{productId}}/options
+Content-Type: application/json
+
+{
+  "name": "Renk",
+  "values": ["Siyah", "Beyaz"]
+}
+
+### Beden seçenekleri
+POST {{baseUrl}}/api/products/{{productId}}/options
+Content-Type: application/json
+
+{
+  "name": "Beden",
+  "values": ["M", "L"]
+}
+
+### Siyah / M varyantı
+POST {{baseUrl}}/api/products/{{productId}}/variants
+Content-Type: application/json
+
+{
+  "sku": "TSHIRT-SIYAH-M",
+  "stockQuantity": 20,
+  "optionValueIds": ["{{blackValueId}}", "{{mediumValueId}}"],
+  "prices": [
+    { "currency": "TRY", "amount": 499.90 },
+    { "currency": "USD", "amount": 15.99 }
+  ]
+}
+
+### Ürün detayını oku
+GET {{baseUrl}}/api/products/{{productId}}
+
+### Kategoriye göre sayfalı arama
+GET {{baseUrl}}/api/products?categoryId={{categoryId}}&search=Basic&page=1&pageSize=20
+
+### TRY fiyatını güncelle
+PUT {{baseUrl}}/api/products/{{productId}}/variants/{{variantId}}/price
+Content-Type: application/json
+
+{
+  "currency": "TRY",
+  "amount": 549.90
+}
+
+### Stok güncelle
+PUT {{baseUrl}}/api/products/{{productId}}/variants/{{variantId}}/stock
+Content-Type: application/json
+
+{
+  "stockQuantity": 25
+}

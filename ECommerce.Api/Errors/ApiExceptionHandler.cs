@@ -1,0 +1,47 @@
+using ECommerce.Application.Common;
+using ECommerce.Domain.Exceptions;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+
+namespace ECommerce.Api.Errors;
+
+public sealed class ApiExceptionHandler(IProblemDetailsService problems, ILogger<ApiExceptionHandler> logger)
+    : IExceptionHandler
+{
+    public async ValueTask<bool> TryHandleAsync(HttpContext context, Exception exception, CancellationToken cancellationToken)
+    {
+        var (status, title, detail) = exception switch
+        {
+            NotFoundException => (404, "Resource not found", exception.Message),
+            ArgumentException => (400, "Invalid request", exception.Message),
+            DbUpdateConcurrencyException => (409, "Concurrent modification", "The product changed. Reload it and retry."),
+            DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } =>
+                (409, "Duplicate resource", "SKU, option value or variant combination already exists."),
+            DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation } } =>
+                (409, "Relationship conflict", "A related resource does not exist or is still in use."),
+            DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.CheckViolation } } =>
+                (400, "Invalid value", "A database constraint rejected the value."),
+            DomainRuleException => (409, "Business rule conflict", exception.Message),
+            NpgsqlException => (503, "Database unavailable", "The database is temporarily unavailable."),
+            _ => (500, "Unexpected error", "An unexpected error occurred.")
+        };
+
+        if (status >= 500)
+            logger.LogError(exception, "Request failed with status {Status}", status);
+        context.Response.StatusCode = status;
+        await problems.WriteAsync(new ProblemDetailsContext
+        {
+            HttpContext = context,
+            ProblemDetails = new ProblemDetails
+            {
+                Status = status,
+                Title = title,
+                Detail = detail,
+                Extensions = { ["traceId"] = context.TraceIdentifier }
+            }
+        });
+        return true;
+    }
+}
