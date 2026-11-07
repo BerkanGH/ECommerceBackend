@@ -1,104 +1,114 @@
 # ECommerce Backend
 
-A .NET 10 Web API for a single-store catalog, customer carts, and orders.
-This portfolio project focuses on domain rules, authorization, and consistent
-stock updates rather than integrating real payment or shipping providers.
+[![Build and test](https://github.com/BerkanGH/ECommerceBackend/actions/workflows/ci.yml/badge.svg)](https://github.com/BerkanGH/ECommerceBackend/actions/workflows/ci.yml)
 
-## Features
+Tek mağazalı bir e-ticaret sitesi için ASP.NET Core Web API. Ürün kataloğu, müşteri
+sepeti ve sipariş akışını içerir. Gerçek ödeme veya kargo entegrasyonu yoktur;
+odak noktası iş kuralları, yetkilendirme ve stok tutarlılığıdır.
 
-- Product-specific options and variants, with separate TRY and USD prices.
-- Customer registration and sign-in using ASP.NET Core Identity bearer tokens.
-- Customer-owned carts with server-calculated prices and a single currency.
-- Transactional checkout, request idempotency, and one-time stock restoration on cancellation.
-- Admin catalog management, product deactivation, and order status transitions.
+## Özellikler
 
-## Stack and structure
+- Kategori ve ürün yönetimi; ürüne özel seçenekler (renk, beden vb.) ve varyantlar.
+- Her varyant için ayrı TRY ve USD fiyatı ile stok miktarı. Kur dönüşümü yapılmaz.
+- ASP.NET Core Identity ile kayıt, giriş, refresh token, parola değiştirme ve çıkış.
+- Customer ve Admin rolleri. Kayıt olan herkes Customer olur.
+- Müşteriye ait sepet. Fiyat her zaman sunucuda katalogdan hesaplanır.
+- Sipariş oluşturma tek transaction içinde yapılır: stok düşer, sepet temizlenir.
+  `Idempotency-Key` başlığı aynı isteğin iki kez sipariş oluşturmasını engeller.
+- Sipariş iptalinde stok bir kez iade edilir. Admin siparişi onaylar, kargolar, teslim eder.
+- Hatalar ProblemDetails formatında döner. Giriş uçlarında rate limit vardır.
 
-ASP.NET Core 10, EF Core 10, PostgreSQL 18, Identity, MediatR, and xUnit.
+## Teknolojiler
 
-| Project | Responsibility |
+.NET 10, ASP.NET Core Web API, EF Core 10, PostgreSQL, ASP.NET Core Identity, MediatR, xUnit.
+
+| Proje | Görevi |
 | --- | --- |
-| Domain | Product, cart, and order rules |
-| Application | Commands, queries, DTOs, and persistence interfaces |
-| Infrastructure | EF Core mappings, PostgreSQL queries/locks, and Identity |
-| Api | HTTP endpoints, authentication, and role checks |
-| tests | Unit tests and PostgreSQL-backed API/persistence tests |
+| `ECommerce.Domain` | Entity'ler ve iş kuralları (ürün, sepet, sipariş) |
+| `ECommerce.Application` | MediatR command/query handler'ları, DTO'lar, repository arayüzleri |
+| `ECommerce.Infrastructure` | EF Core DbContext, mapping'ler, migration'lar, repository'ler, Identity |
+| `ECommerce.Api` | Controller'lar, kimlik doğrulama, hata yönetimi |
+| `tests/` | Unit testler ve PostgreSQL üzerinde çalışan integration testler |
 
-Commands and queries share one database. There is no event sourcing or separate
-read database. See [architecture notes](docs/Architecture.md) for the design.
+Tasarım kararlarının açıklaması: [docs/Architecture.md](docs/Architecture.md).
 
-## Run locally
+## Çalıştırma
 
-Requirements: a .NET 10 SDK and a running PostgreSQL server. Create a development
-database named `ecommerce` first. The API never applies migrations automatically.
-
-From the repository root, in PowerShell:
+Gerekenler: .NET 10 SDK ve PostgreSQL. Önce `ecommerce` adında boş bir veritabanı oluşturun.
+Uygulama migration'ları kendisi uygulamaz; aşağıdaki `database update` komutu gerekir.
 
 ```powershell
-dotnet restore ECommerce.slnx
 dotnet tool restore
-dotnet user-secrets set "ConnectionStrings:ECommerce" "Host=localhost;Port=5432;Database=ecommerce;Username=your_user;Password=your_password" --project ECommerce.Api
+dotnet user-secrets set "ConnectionStrings:ECommerce" "Host=localhost;Port=5432;Database=ecommerce;Username=KULLANICI;Password=PAROLA" --project ECommerce.Api
 $env:ASPNETCORE_ENVIRONMENT = "Development"
-dotnet ef migrations list --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release
-dotnet ef database update --project ECommerce.Infrastructure --startup-project ECommerce.Api --configuration Release
-dotnet run --project ECommerce.Api --configuration Release --launch-profile http
+dotnet ef database update --project ECommerce.Infrastructure --startup-project ECommerce.Api
+dotnet run --project ECommerce.Api --launch-profile http
 ```
-
-Replace the credentials locally; never commit them. User Secrets are for local
-development, not a production secret store. Missing connection configuration
-causes an explicit startup error rather than a silent fallback.
 
 - API: http://localhost:5106
-- OpenAPI JSON: http://localhost:5106/openapi/v1.json (Development only)
-- Liveness: `/health/live`; readiness including migrations: `/health/ready`
+- OpenAPI: http://localhost:5106/openapi/v1.json (sadece Development)
+- Health: `/health/live`, `/health/ready` (veritabanı bağlantısı ve bekleyen migration kontrolü)
 
-For optional Docker PostgreSQL, use [the setup guide](docs/Operations.md).
-Compose publishes PostgreSQL on **5433**, so its API connection string must use
-5433, not the native installation's 5432. The API does not load `.env` automatically.
+Bağlantı dizesi yoksa uygulama açılışta hata verir.
 
-Create an admin with the explicit [bootstrap command](docs/Identity.md).
-Public registration only creates customers. Request examples are in
-`ECommerce.Api/Catalog.http`, `Identity.http`, `Cart.http`, and `Orders.http`.
-For a complete customer walkthrough, see [placing an order](docs/Walkthrough.md).
-
-## Tests
-
-Unit tests do not need a database:
+### Docker ile PostgreSQL (isteğe bağlı)
 
 ```powershell
-dotnet test tests/ECommerce.UnitTests --configuration Release
+Copy-Item .env.example .env   # .env içindeki parolayı değiştirin
+docker compose up -d postgres
 ```
 
-To include PostgreSQL integration tests, provide a development/test connection
-with permission to create schemas:
+Compose PostgreSQL'i **5433** portunda açar; bağlantı dizesinde `Port=5433` kullanın.
+
+### İlk admin hesabı
+
+Kayıt endpoint'i sadece Customer oluşturur. Admin hesabı ayrı bir komutla oluşturulur
+(HTTP sunucusu başlatmadan çalışır ve çıkar):
 
 ```powershell
-$env:ECOMMERCE_TEST_CONNECTION = "Host=localhost;Port=5432;Database=ecommerce_tests;Username=your_user;Password=your_password"
-dotnet test ECommerce.slnx --configuration Release
+dotnet user-secrets set "AdminBootstrap:Email" "admin@example.com" --project ECommerce.Api
+dotnet user-secrets set "AdminBootstrap:Password" "GucluBirParola1!" --project ECommerce.Api
+dotnet run --project ECommerce.Api -- --bootstrap-admin
 ```
 
-Each integration run creates and removes only its own randomly named schema.
-It does not reset the database or delete existing application tables.
-Without the variable, integration tests are reported as **skipped**, not passed.
-See [test coverage and isolation](docs/Testing.md).
+Örnek istekler `ECommerce.Api` altındaki `Identity.http`, `Catalog.http`, `Cart.http`
+ve `Orders.http` dosyalarındadır.
 
-## CI and Docker
+## Endpoint'ler
 
-GitHub Actions is configured to build, check migrations, run both test projects
-against PostgreSQL, and build/smoke-test the API container.
-The Dockerfile uses a multi-stage build and a non-root runtime user.
-See [current verification results](docs/Validation.md) for what was actually run.
+| Alan | Endpoint'ler | Erişim |
+| --- | --- | --- |
+| Hesap | `POST /api/auth/register`, `login`, `refresh`; `GET /api/auth/me`; `POST /api/auth/change-password`, `logout` | Herkese açık / giriş yapmış kullanıcı |
+| Katalog okuma | `GET /api/categories`, `GET /api/products`, `GET /api/products/{id}` | Herkese açık |
+| Katalog yazma | `POST/PUT /api/categories`, `POST/PUT /api/products`, seçenek, varyant, fiyat, stok | Admin |
+| Admin ürün | `GET /api/admin/products`, `PUT /api/admin/products/{id}/availability` | Admin |
+| Sepet | `GET/DELETE /api/cart`, `POST /api/cart/items`, `PUT/DELETE /api/cart/items/{variantId}`, `PUT /api/cart/currency` | Customer |
+| Sipariş | `POST /api/orders` (`Idempotency-Key` başlığı ile), `GET /api/orders`, `GET /api/orders/{id}`, `POST /api/orders/{id}/cancel` | Customer (sadece kendi siparişleri) |
+| Admin sipariş | `GET /api/admin/orders`, `GET /api/admin/orders/{id}`, `POST /api/admin/orders/{id}/confirm`, `ship`, `deliver`, `cancel` | Admin |
 
-## Scope and limitations
+## Testler
 
-Checkout records an order; it does **not** collect money. Confirmation and shipping
-statuses are manual. Real payment/shipping integrations, refunds, email verification,
-password recovery, and MFA are not implemented.
+Unit testler veritabanı gerektirmez:
 
-Logout revokes refresh tokens; an existing access token can remain valid until
-its 15-minute expiry. Deployment also needs TLS, secure Data Protection key storage,
-monitoring, and backups. This is not presented as a production-ready store.
-Review [MediatR's licensing](https://github.com/LuckyPennySoftware/MediatR) before production use.
+```powershell
+dotnet test tests/ECommerce.UnitTests
+```
 
-For a short explanation of the main trade-offs in Turkish, see
-[design discussion notes](docs/Interview.md).
+Integration testler gerçek PostgreSQL kullanır. Test veritabanını önceden oluşturun;
+testler bu veritabanında rastgele isimli bir şema açar, migration'ları uygular ve
+bitince sadece o şemayı siler.
+
+```powershell
+$env:ECOMMERCE_TEST_CONNECTION = "Host=localhost;Port=5432;Database=ecommerce_tests;Username=KULLANICI;Password=PAROLA"
+dotnet test ECommerce.slnx
+```
+
+Değişken ayarlı değilse integration testler "skipped" olarak raporlanır.
+GitHub Actions her push'ta build, migration kontrolü, tüm testler ve Docker imaj kontrolünü çalıştırır.
+
+## Sınırlar
+
+- Sipariş oluşturmak ödeme almak anlamına gelmez; sipariş durumları admin tarafından elle ilerletilir.
+- E-posta doğrulama, parola sıfırlama, MFA, iade ve kargo ücreti yoktur.
+- Çıkış yapınca refresh token'lar geçersiz olur, ancak verilmiş access token 15 dakikalık süresi dolana kadar geçerli kalır.
+- MediatR 13 ve sonrası ticari lisanslıdır; lisans anahtarı olmadan çalışır ama uyarı loglar.
