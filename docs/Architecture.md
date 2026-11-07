@@ -1,68 +1,76 @@
-# Mimariyi açıklama rehberi
+# Tasarım kararları
 
-## Dört katman
+## Katmanlar
 
-Domain iş kurallarını taşır; EF Core, MediatR veya HTTP bilmez.
-Application kullanım senaryolarını command/query handler'larıyla yürütür.
-Infrastructure arayüzleri EF Core, PostgreSQL ve Identity ile uygular.
-Api model binding, kimlik doğrulama, rol koruması ve HTTP cevaplarını yönetir.
+- **Domain**: Entity'ler ve iş kuralları. EF Core, MediatR veya HTTP'ye bağımlı değildir.
+  Entity'lerin setter'ları private'tır; değişiklikler `AddVariant`, `DecreaseStock`, `Cancel` gibi metotlarla yapılır.
+- **Application**: Her kullanım senaryosu bir MediatR handler'ıdır. Repository arayüzleri burada tanımlanır.
+- **Infrastructure**: EF Core, PostgreSQL sorguları/kilitleri ve Identity.
+- **Api**: Controller'lar, model doğrulama, rol kontrolü ve hataların HTTP cevabına çevrilmesi
+  (`Errors/ApiExceptionHandler.cs`).
 
-Api -> Application + Infrastructure, Infrastructure -> Application + Domain,
-Application -> Domain bağımlılıkları vardır. Repository'ler her tabloyu generic
-CRUD'a sarmalamak yerine ürün, sepet ve sipariş kullanımına göre tanımlanır.
+Bağımlılık yönü: Api → Application + Infrastructure → Domain. Okuma ve yazma işlemleri ayrı
+handler'lardadır ama aynı veritabanını kullanır; ayrı bir okuma veritabanı yoktur.
 
-## Aggregate sınırları
+## Ürün, seçenek ve varyant
 
-Product seçenek ve varyant kombinasyonlarını korur. Cart kendi satırlarını ve
-tek para birimi kuralını korur. Order geçmiş veri kopyalarını ve durum geçişlerini
-korur. Koleksiyonlar dışarıdan değiştirilemez; public setter yerine davranış
-metotları kullanılır.
+Renk veya beden gibi özellikler sabit kolon değildir; her ürün kendi seçeneklerini
+(`ProductOption`) ve değerlerini (`ProductOptionValue`) tanımlar. Satılabilir birim
+`ProductVariant`'tır: SKU, stok ve fiyatlar varyanta aittir. Bir varyant her seçenekten
+tam olarak bir değer içerir ve aynı kombinasyon iki kez oluşturulamaz. Seçeneksiz bir
+üründe tek bir varsayılan varyant olur.
 
-ProductVariant fiyatı satılabilir kombinasyona aittir. Renk/Beden sabit property
-değildir; ProductOption/ProductOptionValue ile ürüne özel tanımlanır. Varyant
-tam olarak her seçenekten bir değer içerir. Tekrarlanan kombinasyon engellenir.
-Seçeneksiz üründe de tek bir varsayılan varyant vardır.
+## Sepet ve sipariş neden ayrı?
 
-## CQRS ve MediatR
+Sepette sadece varyant kimliği ve adet tutulur. Fiyat, isim ve stok her okumada
+katalogdan alınır; istemcinin gönderdiği fiyat kullanılmaz. Sepete eklemek stok ayırmaz.
 
-CQRS burada komut ve sorguların ayrı handler'larda olmasıdır; ayrı veritabanı veya
-event sourcing yoktur. MediatR HTTP isteğini uygun handler'a yönlendirir.
-CQRS, MediatR olmadan da uygulanabilir. Okuma işlemleri DTO üretir; entity'ler
-doğrudan istemciye gönderilmez.
+Sipariş ise satın alma kaydıdır: ürün adı, SKU, seçenekler, birim fiyat ve adres sipariş
+anında kopyalanır. Ürün sonradan değişse de geçmiş sipariş aynı kalır.
 
-## Transaction ve eşzamanlılık
+Bir sepet tek para birimi (TRY veya USD) taşır. Checkout isteğindeki `expectedTotal`
+fiyatı belirlemez; sadece müşterinin gördüğü toplamın değişmediğini kontrol eder.
+Fiyat değiştiyse 409 döner ve müşteri sepeti yeniden okur.
 
-Repository sorguları/veri erişimini, IUnitOfWork kaydetmeyi soyutlar.
-Checkout birden fazla aggregate değiştirdiği için açık transaction kullanır.
-Satır kilitleri stok yarışını, Revision tokenları da stale aggregate yazılarını
-denetler. SQL unique/check/FK kısıtları uygulama doğrulamalarını tamamlar.
+## Checkout ve stok
 
-Önce SELECT ile var mı diye bakmak tek başına benzersizlik garantisi vermez:
-iki istek aynı anda yok sonucunu görebilir. Bu yüzden SKU, kombinasyon, sepet
-sahibi ve idempotency anahtarı gibi alanlarda veritabanı indeksleri de gerekir.
+`CheckoutHandler` tek bir transaction içinde çalışır:
 
-## Kimlik ve sahiplik
+1. Müşteri için PostgreSQL advisory lock alınır; aynı müşterinin eşzamanlı checkout'ları sıraya girer.
+2. Aynı `Idempotency-Key` ile daha önce sipariş oluşmuşsa o sipariş döner.
+3. Sepet ve ilgili ürün/varyant satırları `SELECT ... FOR UPDATE` ile kilitlenir.
+4. Fiyat ve stok kilit alındıktan sonra kontrol edilir, stok düşülür, sepet temizlenir, sipariş eklenir.
 
-Customer/Admin role kontrolü API'de uygulanır. Sipariş handler'ları da rolü
-denetler. ICurrentUser doğrulanmış claim'den kullanıcı kimliğini sağlar.
-Kullanıcı kimliği istek gövdesinden alınmaz. Identity parola hash'ini yönetir;
-uygulama kendi parola kriptografisini yazmaz. Access tokenlar JWT değil, Identity
-opak tokenlarıdır. Ayrıntılı süre/iptal davranışı Identity.md içinde belgelenmiştir.
+Herhangi bir adım hata verirse her şey geri alınır. Son stoğu iki müşteri aynı anda almaya
+çalışırsa biri 201, diğeri 409 alır; bu durum integration testlerinde gerçek PostgreSQL ile denenir.
 
-## Sepet ile sipariş neden farklı?
+Idempotency anahtarı müşteri bazında benzersizdir (unique index). Aynı anahtar farklı
+adres veya tutarla tekrar kullanılırsa 409 döner. İptal de sipariş satırını kilitler ve
+stoğu yalnızca ilk iptalde iade eder.
 
-Sepet bir niyettir: stok ayırmaz, fiyatı güncel okur. Order satın alma kaydıdır:
-isim, SKU, seçenek, fiyat ve adresi kopyalar. Ürün sonradan değişse bile geçmiş
-sipariş aynı kalır. expectedTotal sunucuya fiyat dayatmaz; müşterinin gördüğü
-tutarın değişmediğini kontrol eder.
+## Eşzamanlı güncellemeler
 
-İdempotency aynı işlemin ağ yüzünden tekrar gönderilmesine karşıdır. Aynı
-anahtarlı başarılı checkout tek sipariş üretir. İptal de yalnızca ilk seferde
-stok iade eder. Bunlar frontend'de butonu kapatmakla çözülemez.
+Checkout dışındaki güncellemelerde optimistic concurrency kullanılır. PostgreSQL her
+satır güncellemesinde `xmin` sistem kolonunu değiştirir; EF Core bu değeri UPDATE'in
+WHERE koşuluna ekler. Satırı biz okuduktan sonra başka biri değiştirdiyse güncelleme
+0 satırı etkiler, EF `DbUpdateConcurrencyException` fırlatır ve API 409 döner.
 
-## Sadelik sınırı
+Önce SELECT ile "var mı" diye bakmak benzersizlik garantisi vermez, çünkü iki istek aynı
+anda "yok" sonucunu görebilir. Bu yüzden SKU, varyant kombinasyonu, kullanıcı başına sepet
+ve idempotency anahtarı için veritabanında unique index vardır.
 
-Mikroservis, event bus, event sourcing, ayrı read database veya gereksiz generic
-altyapı yoktur. Gerçek ödeme/kargo eklendiğinde dış servis yan etkileri transaction
-içine konulmamalı; ödeme durumları, outbox/idempotency ve hata telafisi ayrıca
-tasarlanmalıdır. Şimdiki Confirmed durumunu Paid olarak anlatmamak önemlidir.
+## Kimlik ve yetki
+
+Parola hash'leme, kilitleme (5 hatalı denemede 5 dakika) ve roller ASP.NET Core Identity ile
+yapılır. Token'lar JWT değil, Identity'nin opak bearer token'larıdır (access 15 dakika,
+refresh 7 gün). Çıkış ve parola değişikliği security stamp'i yeniler, böylece eski refresh
+token'lar geçersiz olur.
+
+Kullanıcı kimliği her zaman token'daki claim'den alınır (`ICurrentUser`), istek gövdesinden
+alınmaz. Bir müşteri başkasının siparişini istediğinde 404 alır.
+
+## Bilinçli olarak eklenmeyenler
+
+Mikroservis, event bus, ayrı okuma veritabanı ve generic repository yoktur. Gerçek ödeme
+eklenirse dış servis çağrısı veritabanı transaction'ı içine konmamalı; ödeme durumları
+ayrıca tasarlanmalıdır. Şu anki `Confirmed` durumu "ödendi" anlamına gelmez.
