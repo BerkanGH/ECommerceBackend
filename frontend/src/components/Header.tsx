@@ -29,9 +29,12 @@ export default function Header() {
   return (
     <header className="header">
       <div className="container header-inner">
-        <Link to="/" className="brand">ECommerce</Link>
-        <nav className="nav">
-          <NavLink to="/" end>Ürünler</NavLink>
+        <Link to="/" className="brand">
+          <span className="brand-mark" aria-hidden="true">E</span>
+          <span className="brand-name">ECommerce</span>
+        </Link>
+        <nav className="nav" aria-label="Ana menü">
+          <NavLink to="/" end>Mağaza</NavLink>
           {isCustomer && <NavLink to="/orders">Siparişlerim</NavLink>}
           {isAdmin && <NavLink to="/admin">Yönetim</NavLink>}
         </nav>
@@ -44,23 +47,25 @@ export default function Header() {
               title={cartHasItems ? 'Sepette ürün varken para birimi değiştirilemez' : undefined}
               onChange={event => handleCurrencyChange(event.target.value as Currency)}
             >
-              <option value="TRY">TRY ₺</option>
-              <option value="USD">USD $</option>
+              <option value="TRY">₺ TRY</option>
+              <option value="USD">$ USD</option>
             </select>
-          )}
-          {isCustomer && (
-            <NavLink to="/cart">
-              Sepet{itemCount > 0 && <span className="badge-count">{itemCount}</span>}
-            </NavLink>
           )}
           {user ? (
             <>
-              <span className="muted small">{user.email}</span>
-              <button className="button secondary small" onClick={handleLogout}>Çıkış yap</button>
+              <NavLink to="/account" title={user.email}>
+                Hesabım<span className="header-email muted small"> ({user.email})</span>
+              </NavLink>
+              {isCustomer && (
+                <NavLink to="/cart" className="cart-link">
+                  Sepet{itemCount > 0 && <span className="badge-count">{itemCount}</span>}
+                </NavLink>
+              )}
+              <button className="link-button small" onClick={handleLogout}>Çıkış</button>
             </>
           ) : (
             <>
-              <Link to="/login">Giriş yap</Link>
+              <NavLink to="/login">Giriş yap</NavLink>
               <Link to="/register" className="button small">Kayıt ol</Link>
             </>
           )}

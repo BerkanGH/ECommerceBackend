@@ -75,8 +75,8 @@ export default function Cart() {
                   <strong>Ürün bulunamadı</strong>
                 )}
                 <div className="muted small">
-                  {item.options.map(option => `${option.name}: ${option.value}`).join(', ')}
-                  {item.sku && <> · SKU: {item.sku}</>}
+                  {[...item.options.map(option => `${option.name}: ${option.value}`), item.sku && `SKU: ${item.sku}`]
+                    .filter(Boolean).join(' · ')}
                 </div>
                 <div className="small">
                   {item.unitPrice !== null && <>Birim fiyat: {formatPrice(item.unitPrice, cart.currency)}</>}

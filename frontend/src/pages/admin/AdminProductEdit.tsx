@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import ProductImage from '../../components/ProductImage'
 import { api, errorMessage } from '../../services/api'
 import type { Category, Currency, Price, Product, Variant } from '../../types/api'
+import { isValidImageUrl, sortOptionValues } from '../../utils/format'
 
 function priceOf(variant: Variant, currency: Currency) {
   return variant.prices.find(price => price.currency === currency)?.amount
@@ -73,7 +75,7 @@ export default function AdminProductEdit() {
 
   const [categories, setCategories] = useState<Category[]>([])
   const [product, setProduct] = useState<Product | null>(null)
-  const [details, setDetails] = useState({ categoryId: '', name: '', description: '' })
+  const [details, setDetails] = useState({ categoryId: '', name: '', description: '', imageUrl: '' })
   const [optionName, setOptionName] = useState('')
   const [optionValues, setOptionValues] = useState('')
   const [newValues, setNewValues] = useState<Record<string, string>>({})
@@ -92,7 +94,7 @@ export default function AdminProductEdit() {
     api.adminProduct(id)
       .then(data => {
         setProduct(data)
-        setDetails({ categoryId: data.categoryId, name: data.name, description: data.description ?? '' })
+        setDetails({ categoryId: data.categoryId, name: data.name, description: data.description ?? '', imageUrl: data.imageUrl ?? '' })
       })
       .catch(err => setError(errorMessage(err)))
   }, [id])
@@ -116,7 +118,17 @@ export default function AdminProductEdit() {
 
   async function saveDetails(event: FormEvent) {
     event.preventDefault()
-    const input = { categoryId: details.categoryId, name: details.name.trim(), description: details.description.trim() || null }
+    const imageUrl = details.imageUrl.trim()
+    if (imageUrl && !isValidImageUrl(imageUrl)) {
+      setError('Görsel adresi https:// ile başlayan tam bir adres olmalı.')
+      return
+    }
+    const input = {
+      categoryId: details.categoryId,
+      name: details.name.trim(),
+      description: details.description.trim() || null,
+      imageUrl: imageUrl || null,
+    }
     if (id === undefined) {
       const created = await run(() => api.createProduct(input), 'Ürün oluşturuldu. Şimdi seçenek ve varyant ekleyebilirsiniz.')
       if (created) navigate(`/admin/products/${created.id}`, { replace: true })
@@ -207,6 +219,15 @@ export default function AdminProductEdit() {
             <textarea maxLength={1000} value={details.description}
               onChange={e => setDetails({ ...details, description: e.target.value })} />
           </label>
+          <div className="full image-preview">
+            <ProductImage key={details.imageUrl} src={details.imageUrl.trim() || null} alt="Önizleme" />
+            <label className="image-url-field">
+              Görsel adresi
+              <input type="url" maxLength={2048} placeholder="https://..." value={details.imageUrl}
+                onChange={e => setDetails({ ...details, imageUrl: e.target.value })} />
+              <span className="field-hint">İsteğe bağlı. Sadece https:// ile başlayan adresler kabul edilir; boş bırakılırsa varsayılan görsel gösterilir.</span>
+            </label>
+          </div>
         </div>
         {categories.length === 0 && (
           <p className="alert warning small">Önce <Link to="/admin/categories">bir kategori oluşturun</Link>.</p>
@@ -229,7 +250,7 @@ export default function AdminProductEdit() {
               <div key={option.id} className="option-group">
                 <strong>{option.name}</strong>
                 <div className="row">
-                  <span className="small">{option.values.map(value => value.value).join(', ')}</span>
+                  <span className="small">{sortOptionValues(option.values).map(value => value.value).join(', ')}</span>
                   {!optionsLocked && (
                     <>
                       <input aria-label={`${option.name} için yeni değer`} placeholder="Yeni değer" maxLength={100}
@@ -306,7 +327,7 @@ export default function AdminProductEdit() {
                     <select required value={variantSelection[option.id] ?? ''}
                       onChange={e => setVariantSelection(current => ({ ...current, [option.id]: e.target.value }))}>
                       <option value="">Seçin</option>
-                      {option.values.map(value => <option key={value.id} value={value.id}>{value.value}</option>)}
+                      {sortOptionValues(option.values).map(value => <option key={value.id} value={value.id}>{value.value}</option>)}
                     </select>
                   </label>
                 ))}

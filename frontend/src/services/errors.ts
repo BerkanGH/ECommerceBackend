@@ -30,6 +30,7 @@ const knownMessages: Record<string, string> = {
 const knownPrefixes: [string, string][] = [
   ['Select exactly one value from each product option', 'Her seçenekten bir değer seçin.'],
   ['Only TRY and USD are supported', 'Sadece TRY ve USD desteklenir.'],
+  ['Image URL must be an absolute HTTPS address', 'Görsel adresi https:// ile başlayan tam bir adres olmalı.'],
   ['Price must fit numeric', 'Fiyat 0 veya daha büyük olmalı ve en fazla iki ondalık basamak içermeli.'],
 ]
 
@@ -40,6 +41,7 @@ const identityErrors: Record<string, string> = {
   PasswordRequiresUpper: 'Şifre en az bir büyük harf içermeli.',
   PasswordRequiresNonAlphanumeric: 'Şifre en az bir özel karakter içermeli (ör. ! veya *).',
   InvalidEmail: 'Geçerli bir e-posta adresi girin.',
+  PasswordMismatch: 'Mevcut şifre hatalı.',
 }
 
 const statusMessages: Record<number, string> = {

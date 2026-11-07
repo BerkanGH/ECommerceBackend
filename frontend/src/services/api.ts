@@ -123,6 +123,7 @@ export interface ProductInput {
   categoryId: string
   name: string
   description: string | null
+  imageUrl: string | null
 }
 
 export interface VariantInput {
@@ -154,6 +155,8 @@ export const api = {
   register: (email: string, password: string) =>
     request<Account>('/api/auth/register', { method: 'POST', body: { email, password } }),
   me: () => request<Account>('/api/auth/me'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<void>('/api/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
 
   categories: () => request<PagedResult<Category>>('/api/categories?pageSize=100'),
   createCategory: (name: string, description: string | null) =>

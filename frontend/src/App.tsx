@@ -1,6 +1,7 @@
 import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import Header from './components/Header'
 import ProtectedRoute from './components/ProtectedRoute'
+import Account from './pages/Account'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminOrderDetail from './pages/admin/AdminOrderDetail'
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
+          <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
           <Route path="/cart" element={<ProtectedRoute role="Customer"><Cart /></ProtectedRoute>} />
           <Route path="/checkout" element={<ProtectedRoute role="Customer"><Checkout /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute role="Customer"><Orders /></ProtectedRoute>} />
@@ -55,8 +57,9 @@ export default function App() {
         </Routes>
       </main>
       <footer className="footer">
-        <div className="container">
-          Portföy projesi. Siparişlerde gerçek ödeme alınmaz ve kargo gönderilmez.
+        <div className="container footer-inner">
+          <span>ECommerce · ASP.NET Core ve React ile hazırlanmış portföy projesi</span>
+          <span>Siparişlerde gerçek ödeme alınmaz ve kargo gönderilmez.</span>
         </div>
       </footer>
     </>

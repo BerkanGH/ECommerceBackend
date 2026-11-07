@@ -47,6 +47,7 @@ export default function Register() {
   return (
     <div className="card auth-card">
       <h1>Kayıt ol</h1>
+      <p className="muted">Birkaç saniyede müşteri hesabınızı oluşturun.</p>
       <form className="form" onSubmit={handleSubmit}>
         <label>
           E-posta

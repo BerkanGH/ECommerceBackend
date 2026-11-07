@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 interface Props {
-  role: 'Customer' | 'Admin'
+  role?: 'Customer' | 'Admin'
   children: ReactNode
 }
 
@@ -14,7 +14,7 @@ export default function ProtectedRoute({ role, children }: Props) {
 
   if (loading) return <p className="muted">Yükleniyor…</p>
   if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />
-  if (!user.roles.includes(role)) {
+  if (role && !user.roles.includes(role)) {
     return (
       <div className="card empty">
         <h2>Bu sayfaya erişiminiz yok</h2>

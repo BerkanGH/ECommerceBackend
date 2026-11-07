@@ -7,7 +7,8 @@ export default function Login() {
   const { user, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/'
+  const state = location.state as { from?: string; passwordChanged?: boolean } | null
+  const from = state?.from ?? '/'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -35,6 +36,8 @@ export default function Login() {
   return (
     <div className="card auth-card">
       <h1>Giriş yap</h1>
+      <p className="muted">Sepetinize ve siparişlerinize ulaşmak için giriş yapın.</p>
+      {state?.passwordChanged && <p className="alert success">Şifreniz değişti. Yeni şifrenizle giriş yapın.</p>}
       <form className="form" onSubmit={handleSubmit}>
         <label>
           E-posta

@@ -24,6 +24,7 @@ export interface ProductSummary {
   categoryId: string
   name: string
   description: string | null
+  imageUrl: string | null
   isActive: boolean
   minPriceTry: number | null
   minPriceUsd: number | null
@@ -54,6 +55,7 @@ export interface Product {
   categoryId: string
   name: string
   description: string | null
+  imageUrl: string | null
   options: ProductOption[]
   variants: Variant[]
   isActive: boolean

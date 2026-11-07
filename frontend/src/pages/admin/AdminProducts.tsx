@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import Pagination from '../../components/Pagination'
+import ProductImage from '../../components/ProductImage'
 import { api, errorMessage } from '../../services/api'
 import type { PagedResult, ProductSummary } from '../../types/api'
 import { formatPrice } from '../../utils/format'
@@ -67,7 +68,12 @@ export default function AdminProducts() {
             <tbody>
               {result.items.map(product => (
                 <tr key={product.id}>
-                  <td><Link to={`/admin/products/${product.id}`}>{product.name}</Link></td>
+                  <td>
+                    <Link to={`/admin/products/${product.id}`} className="cell-product">
+                      <ProductImage src={product.imageUrl} alt="" className="thumb" />
+                      {product.name}
+                    </Link>
+                  </td>
                   <td>{product.isActive ? 'Satışta' : <span className="text-danger">Satışa kapalı</span>}</td>
                   <td>{product.inStock ? 'Var' : <span className="text-danger">Yok</span>}</td>
                   <td className="align-right small">

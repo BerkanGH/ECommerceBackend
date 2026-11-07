@@ -1,16 +1,28 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import ProductImage from '../components/ProductImage'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { api, errorMessage } from '../services/api'
-import type { Product } from '../types/api'
-import { formatPrice } from '../utils/format'
+import type { Category, Product } from '../types/api'
+import { formatPrice, sortOptionValues } from '../utils/format'
 
-function initialSelection(product: Product): Record<string, string> {
-  const variant = product.variants.find(item => item.stockQuantity > 0) ?? product.variants[0]
-  const selection: Record<string, string> = {}
+type Selection = Record<string, string>
+
+function findVariant(product: Product, selection: Selection) {
+  return product.variants.find(variant =>
+    product.options.every(option => variant.optionValueIds.includes(selection[option.id])))
+}
+
+// Picks the first in-stock combination, following the order the values are shown in.
+function initialSelection(product: Product): Selection {
+  const selection: Selection = {}
   for (const option of product.options) {
-    const value = option.values.find(item => variant?.optionValueIds.includes(item.id)) ?? option.values[0]
+    const values = sortOptionValues(option.values)
+    const inStock = values.find(value => product.variants.some(variant =>
+      variant.stockQuantity > 0 &&
+      [...Object.values(selection), value.id].every(id => variant.optionValueIds.includes(id))))
+    const value = inStock ?? values[0]
     if (value) selection[option.id] = value.id
   }
   return selection
@@ -24,7 +36,8 @@ export default function ProductDetail() {
   const location = useLocation()
 
   const [product, setProduct] = useState<Product | null>(null)
-  const [selection, setSelection] = useState<Record<string, string>>({})
+  const [category, setCategory] = useState<Category | null>(null)
+  const [selection, setSelection] = useState<Selection>({})
   const [quantity, setQuantity] = useState(1)
   const [loadError, setLoadError] = useState('')
   const [error, setError] = useState('')
@@ -36,6 +49,8 @@ export default function ProductDetail() {
       .then(data => {
         setProduct(data)
         setSelection(initialSelection(data))
+        return api.categories().then(result =>
+          setCategory(result.items.find(item => item.id === data.categoryId) ?? null))
       })
       .catch(err => setLoadError(errorMessage(err)))
   }, [id])
@@ -44,18 +59,22 @@ export default function ProductDetail() {
     return (
       <div className="card empty">
         <p>{loadError}</p>
-        <Link to="/">Ürünlere dön</Link>
+        <Link to="/" className="button secondary">Mağazaya dön</Link>
       </div>
     )
   }
   if (!product) return <p className="muted">Ürün yükleniyor…</p>
 
-  const variant = product.variants.find(item =>
-    product.options.every(option => item.optionValueIds.includes(selection[option.id])))
+  const variant = findVariant(product, selection)
   const price = variant?.prices.find(item => item.currency === currency)
   const stock = variant?.stockQuantity ?? 0
-  const maxQuantity = Math.min(stock, 999)
+  const maxQuantity = Math.max(Math.min(stock, 999), 1)
   const canBuy = variant !== undefined && price !== undefined && stock > 0
+
+  function isAvailable(optionId: string, valueId: string) {
+    const candidate = findVariant(product!, { ...selection, [optionId]: valueId })
+    return candidate !== undefined && candidate.stockQuantity > 0
+  }
 
   function selectValue(optionId: string, valueId: string) {
     setSelection(current => ({ ...current, [optionId]: valueId }))
@@ -85,30 +104,48 @@ export default function ProductDetail() {
 
   return (
     <div className="stack">
-      <Link to="/" className="small">← Ürünlere dön</Link>
-      <div className="product-detail">
-        <div className="product-image large" aria-hidden="true">{product.name.charAt(0).toUpperCase()}</div>
+      <nav className="breadcrumb" aria-label="Konum">
+        <Link to="/">Mağaza</Link>
+        {category && (
+          <>
+            <span>/</span>
+            <Link to={`/?category=${category.id}`}>{category.name}</Link>
+          </>
+        )}
+        <span>/</span>
+        <span>{product.name}</span>
+      </nav>
 
-        <div className="stack">
+      <div className="product-detail">
+        <ProductImage src={product.imageUrl} alt={product.name} className="large" />
+
+        <div className="product-info">
           <div>
             <h1>{product.name}</h1>
             {product.description && <p className="muted">{product.description}</p>}
           </div>
 
+          {variant && (
+            <div className="price-large">
+              {price ? formatPrice(price.amount, currency) : <span className="muted small">Bu ürünün {currency} fiyatı yok.</span>}
+            </div>
+          )}
+
           {product.options.map(option => (
             <div key={option.id} className="option-group">
               <strong className="small">{option.name}</strong>
               <div className="option-values">
-                {option.values.map(value => (
-                  <button
-                    key={value.id}
-                    type="button"
-                    className={selection[option.id] === value.id ? 'selected' : ''}
-                    onClick={() => selectValue(option.id, value.id)}
-                  >
-                    {value.value}
-                  </button>
-                ))}
+                {sortOptionValues(option.values).map(value => {
+                  const classes = [
+                    selection[option.id] === value.id ? 'selected' : '',
+                    isAvailable(option.id, value.id) ? '' : 'unavailable',
+                  ].join(' ')
+                  return (
+                    <button key={value.id} type="button" className={classes} onClick={() => selectValue(option.id, value.id)}>
+                      {value.value}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           ))}
@@ -119,38 +156,34 @@ export default function ProductDetail() {
           )}
 
           {variant && (
-            <div className="stack">
-              <div className="price-large">
-                {price ? formatPrice(price.amount, currency) : `Bu ürünün ${currency} fiyatı yok.`}
-              </div>
-              <div className="small">
-                {stock > 0 ? <span>Stokta {stock} adet var</span> : <strong className="text-danger">Tükendi</strong>}
-                <span className="muted"> · SKU: {variant.sku}</span>
+            <>
+              <div className="stock-line">
+                {stock > 0
+                  ? <span>{stock <= 5 ? `Son ${stock} ürün` : 'Stokta var'}</span>
+                  : <strong className="text-danger">Bu seçenek tükendi</strong>}
+                <span className="muted small"> · SKU: {variant.sku}</span>
               </div>
 
               {isAdmin ? (
                 <p className="alert info">Yönetici hesabıyla alışveriş yapılamaz.</p>
               ) : (
-                <div className="row">
-                  <label className="row">
-                    Adet
-                    <input
-                      type="number"
-                      className="quantity-input"
-                      min={1}
-                      max={Math.max(maxQuantity, 1)}
-                      value={quantity}
-                      disabled={!canBuy}
-                      onChange={event => setQuantity(Math.min(Math.max(1, Number(event.target.value) || 1), Math.max(maxQuantity, 1)))}
-                    />
-                  </label>
-                  <button className="button" disabled={!canBuy || adding} onClick={addToCart}>
+                <div className="buy-box">
+                  <input
+                    type="number"
+                    className="quantity-input"
+                    aria-label="Adet"
+                    min={1}
+                    max={maxQuantity}
+                    value={quantity}
+                    disabled={!canBuy}
+                    onChange={event => setQuantity(Math.min(Math.max(1, Number(event.target.value) || 1), maxQuantity))}
+                  />
+                  <button className="button large" disabled={!canBuy || adding} onClick={addToCart}>
                     {adding ? 'Ekleniyor…' : 'Sepete ekle'}
                   </button>
                 </div>
               )}
-              {!user && <p className="muted small">Sepete eklemek için giriş yapmanız gerekir.</p>}
-            </div>
+            </>
           )}
 
           {added && (
@@ -159,6 +192,12 @@ export default function ProductDetail() {
             </p>
           )}
           {error && <p className="alert error">{error}</p>}
+
+          <div className="info-list">
+            {!user && <span>Sepete eklemek için giriş yapmanız gerekir.</span>}
+            <span>Fiyat ve stok sipariş anında sunucuda tekrar kontrol edilir.</span>
+            <span>Demo mağaza: sipariş verildiğinde ödeme alınmaz.</span>
+          </div>
         </div>
       </div>
     </div>
