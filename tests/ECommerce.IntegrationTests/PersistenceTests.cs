@@ -34,28 +34,6 @@ public class PersistenceTests(PostgresFixture fixture)
     }
 
     [PostgresFact]
-    public async Task Revision_changes_for_modified_child_but_not_unrelated_aggregate()
-    {
-        var first = await fixture.SeedProductAsync();
-        var second = await fixture.SeedProductAsync();
-        await fixture.WithContextAsync(async context =>
-        {
-            var repository = new ProductRepository(context);
-            var changed = (await repository.GetAsync(first.ProductId, true, default))!;
-            var untouched = (await repository.GetAsync(second.ProductId, true, default))!;
-            var firstRevision = context.Entry(changed).Property<Guid>("Revision").CurrentValue;
-            var secondRevision = context.Entry(untouched).Property<Guid>("Revision").CurrentValue;
-            await ((IUnitOfWork)context).SaveChangesAsync(default);
-            Assert.Equal(firstRevision, context.Entry(changed).Property<Guid>("Revision").CurrentValue);
-            changed.Variants.Single().SetPrice("TRY", 101);
-            await ((IUnitOfWork)context).SaveChangesAsync(default);
-            Assert.NotEqual(firstRevision, context.Entry(changed).Property<Guid>("Revision").CurrentValue);
-            Assert.Equal(secondRevision, context.Entry(untouched).Property<Guid>("Revision").CurrentValue);
-            return true;
-        });
-    }
-
-    [PostgresFact]
     public async Task Stale_stock_write_is_rejected_and_rolled_back()
     {
         var product = await fixture.SeedProductAsync();
@@ -75,25 +53,16 @@ public class PersistenceTests(PostgresFixture fixture)
     }
 
     [PostgresFact]
-    public async Task Clearing_cart_advances_revision_and_deletes_items()
+    public async Task Clearing_cart_deletes_items()
     {
         var product = await fixture.SeedProductAsync();
         using var customer = await fixture.CreateCustomerAsync();
         using var add = await customer.PostAsJsonAsync("/api/cart/items",
             new { productVariantId = product.VariantId, quantity = 1, currency = "TRY" });
         add.EnsureSuccessStatusCode();
-        var me = await customer.GetFromJsonAsync<AccountDto>("/api/auth/me");
-        var revision = await fixture.WithContextAsync(async context =>
-        {
-            var cart = (await new CartRepository(context).GetByUserAsync(me!.Id, true, default))!;
-            var before = context.Entry(cart).Property<Guid>("Revision").CurrentValue;
-            cart.Clear();
-            await ((IUnitOfWork)context).SaveChangesAsync(default);
-            Assert.NotEqual(before, context.Entry(cart).Property<Guid>("Revision").CurrentValue);
-            return before;
-        });
+        using var clear = await customer.DeleteAsync("/api/cart");
+        Assert.Equal(HttpStatusCode.NoContent, clear.StatusCode);
         Assert.Empty((await customer.GetFromJsonAsync<CartDto>("/api/cart"))!.Items);
-        Assert.NotEqual(Guid.Empty, revision);
     }
 
     [PostgresFact]

@@ -2,6 +2,6 @@ namespace ECommerce.Application.Abstractions;
 
 public interface IUnitOfWork
 {
-    Task SaveChangesAsync(CancellationToken cancellationToken);
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<ICommerceTransaction> BeginTransactionAsync(CancellationToken cancellationToken);
 }

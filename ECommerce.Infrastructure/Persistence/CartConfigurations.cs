@@ -14,7 +14,7 @@ public sealed class CartConfiguration : IEntityTypeConfiguration<Cart>
         builder.HasKey(cart => cart.Id);
         builder.Property(cart => cart.Id).ValueGeneratedNever();
         builder.Property(cart => cart.Currency).HasMaxLength(3).IsRequired();
-        builder.Property<Guid>("Revision").IsConcurrencyToken();
+        builder.Property<uint>("Version").IsRowVersion();
         builder.HasIndex(cart => cart.UserId).IsUnique();
         builder.HasOne<ApplicationUser>().WithMany().HasForeignKey(cart => cart.UserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(cart => cart.Items).WithOne().HasForeignKey(item => item.CartId).OnDelete(DeleteBehavior.Cascade);
@@ -30,6 +30,7 @@ public sealed class CartItemConfiguration : IEntityTypeConfiguration<CartItem>
             table.HasCheckConstraint("CK_CartItems_Quantity", "\"Quantity\" BETWEEN 1 AND 999"));
         builder.HasKey(item => item.Id);
         builder.Property(item => item.Id).ValueGeneratedNever();
+        builder.Property<uint>("Version").IsRowVersion();
         builder.HasIndex(item => new { item.CartId, item.ProductVariantId }).IsUnique();
         builder.HasOne<ProductVariant>().WithMany().HasForeignKey(item => item.ProductVariantId).OnDelete(DeleteBehavior.Restrict);
     }

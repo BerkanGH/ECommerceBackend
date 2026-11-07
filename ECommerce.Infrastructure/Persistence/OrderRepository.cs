@@ -23,7 +23,7 @@ public sealed class OrderRepository(ECommerceDbContext context) : IOrderReposito
     {
         RequireTransaction();
         return context.Carts.FromSqlInterpolated(
-                $"SELECT * FROM \"Carts\" WHERE \"UserId\" = {userId} FOR UPDATE")
+                $"SELECT *, xmin FROM \"Carts\" WHERE \"UserId\" = {userId} FOR UPDATE")
             .Include(cart => cart.Items).SingleOrDefaultAsync(cancellationToken);
     }
 
@@ -35,9 +35,9 @@ public sealed class OrderRepository(ECommerceDbContext context) : IOrderReposito
         var productIds = await context.ProductVariants.AsNoTracking().Where(variant => ids.Contains(variant.Id))
             .Select(variant => variant.ProductId).Distinct().ToArrayAsync(cancellationToken);
         await context.Products.FromSqlInterpolated(
-            $"SELECT * FROM \"Products\" WHERE \"Id\" = ANY({productIds}) ORDER BY \"Id\" FOR UPDATE").ToArrayAsync(cancellationToken);
+            $"SELECT *, xmin FROM \"Products\" WHERE \"Id\" = ANY({productIds}) ORDER BY \"Id\" FOR UPDATE").ToArrayAsync(cancellationToken);
         var variants = await context.ProductVariants.FromSqlInterpolated(
-            $"SELECT * FROM \"ProductVariants\" WHERE \"Id\" = ANY({ids}) ORDER BY \"Id\" FOR UPDATE").ToArrayAsync(cancellationToken);
+            $"SELECT *, xmin FROM \"ProductVariants\" WHERE \"Id\" = ANY({ids}) ORDER BY \"Id\" FOR UPDATE").ToArrayAsync(cancellationToken);
         return variants.ToDictionary(variant => variant.Id);
     }
 
@@ -48,8 +48,8 @@ public sealed class OrderRepository(ECommerceDbContext context) : IOrderReposito
         {
             RequireTransaction();
             query = userId.HasValue
-                ? context.Orders.FromSqlInterpolated($"SELECT * FROM \"Orders\" WHERE \"Id\" = {id} AND \"UserId\" = {userId.Value} FOR UPDATE")
-                : context.Orders.FromSqlInterpolated($"SELECT * FROM \"Orders\" WHERE \"Id\" = {id} FOR UPDATE");
+                ? context.Orders.FromSqlInterpolated($"SELECT *, xmin FROM \"Orders\" WHERE \"Id\" = {id} AND \"UserId\" = {userId.Value} FOR UPDATE")
+                : context.Orders.FromSqlInterpolated($"SELECT *, xmin FROM \"Orders\" WHERE \"Id\" = {id} FOR UPDATE");
         }
         else
         {
