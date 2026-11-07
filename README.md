@@ -5,6 +5,7 @@
 Tek mağazalı bir e-ticaret sitesi için ASP.NET Core Web API. Ürün kataloğu, müşteri
 sepeti ve sipariş akışını içerir. Gerçek ödeme veya kargo entegrasyonu yoktur;
 odak noktası iş kuralları, yetkilendirme ve stok tutarlılığıdır.
+`frontend/` klasöründe bu API'yi kullanan React arayüzü bulunur.
 
 ## Özellikler
 
@@ -21,6 +22,7 @@ odak noktası iş kuralları, yetkilendirme ve stok tutarlılığıdır.
 ## Teknolojiler
 
 .NET 10, ASP.NET Core Web API, EF Core 10, PostgreSQL, ASP.NET Core Identity, MediatR, xUnit.
+Frontend: React, TypeScript, Vite ve React Router.
 
 | Proje | Görevi |
 | --- | --- |
@@ -29,6 +31,7 @@ odak noktası iş kuralları, yetkilendirme ve stok tutarlılığıdır.
 | `ECommerce.Infrastructure` | EF Core DbContext, mapping'ler, migration'lar, repository'ler, Identity |
 | `ECommerce.Api` | Controller'lar, kimlik doğrulama, hata yönetimi |
 | `tests/` | Unit testler ve PostgreSQL üzerinde çalışan integration testler |
+| `frontend/` | Müşteri ve yönetim arayüzü |
 
 Tasarım kararlarının açıklaması: [docs/Architecture.md](docs/Architecture.md).
 
@@ -74,6 +77,31 @@ dotnet run --project ECommerce.Api -- --bootstrap-admin
 Örnek istekler `ECommerce.Api` altındaki `Identity.http`, `Catalog.http`, `Cart.http`
 ve `Orders.http` dosyalarındadır.
 
+## Frontend
+
+Gerekenler: Node.js 20.19+ veya 22.12+. API çalışırken:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Arayüz http://localhost:5173 adresinde açılır. Geliştirme sunucusu `/api` isteklerini
+http://localhost:5106 adresine yönlendirir, bu yüzden backend'de CORS ayarı gerekmez.
+Farklı bir adres için `frontend/.env.example` dosyasını `.env` olarak kopyalayıp düzenleyin.
+`npm run build` production derlemesini `frontend/dist` klasörüne üretir.
+
+Müşteri tarafında ürün listesi, kategori filtresi ve arama, varyant seçimi, sepet,
+sipariş verme, sipariş geçmişi ve iptal vardır. Admin hesabıyla giriş yapınca
+kategori, ürün, seçenek, varyant, fiyat, stok ve sipariş durumu yönetimi açılır.
+Sayfaları rol bazında gizlemek sadece arayüz kolaylığıdır; yetki kontrolü API'dedir.
+
+Access token sadece bellekte, refresh token ise sekme kapanınca silinen `sessionStorage`'da
+tutulur; şifre tarayıcıda saklanmaz. Ürün görseli API'de olmadığı için kartlarda ürün
+adının baş harfi gösterilir. Production'da arayüz API ile aynı adresten sunulmalı veya
+API'ye CORS ayarı eklenmelidir.
+
 ## Endpoint'ler
 
 | Alan | Endpoint'ler | Erişim |
@@ -104,7 +132,7 @@ dotnet test ECommerce.slnx
 ```
 
 Değişken ayarlı değilse integration testler "skipped" olarak raporlanır.
-GitHub Actions her push'ta build, migration kontrolü, tüm testler ve Docker imaj kontrolünü çalıştırır.
+GitHub Actions her push'ta build, migration kontrolü, tüm testler, frontend derlemesi ve Docker imaj kontrolünü çalıştırır.
 
 ## Sınırlar
 
