@@ -11,11 +11,13 @@ public class Product
     public IReadOnlyCollection<ProductVariant> Variants => _variants.AsReadOnly();
     public const int MaxNameLength = 100;
     public const int MaxDescriptionLength = 1000;
+    public const int MaxImageUrlLength = 2048;
 
     public Guid Id { get; private set; }
     public Guid CategoryId { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
+    public string? ImageUrl { get; private set; }
     public bool IsActive { get; private set; } = true;
 
     public void SetAvailability(bool isActive) => IsActive = isActive;
@@ -108,5 +110,23 @@ public class Product
 
         Name = normalizedName;
         Description = normalizedDescription;
+    }
+
+    public void SetImageUrl(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            ImageUrl = null;
+            return;
+        }
+
+        var trimmed = imageUrl.Trim();
+        if (trimmed.Length > MaxImageUrlLength ||
+            !Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+        {
+            throw new ArgumentException("Image URL must be an absolute HTTPS address.", nameof(imageUrl));
+        }
+
+        ImageUrl = trimmed;
     }
 }

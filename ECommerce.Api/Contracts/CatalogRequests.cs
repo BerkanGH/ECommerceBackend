@@ -9,7 +9,8 @@ public record CategoryRequest(
 public record ProductRequest(
     Guid CategoryId,
     [Required, StringLength(100)] string Name,
-    [StringLength(1000)] string? Description);
+    [StringLength(1000)] string? Description,
+    [StringLength(2048)] string? ImageUrl = null);
 
 public record OptionRequest(
     [Required, StringLength(100)] string Name,

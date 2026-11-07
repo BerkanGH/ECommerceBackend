@@ -14,6 +14,28 @@ public class ProductTests
         Assert.Throws<ArgumentException>(() => new Product(Guid.Empty, "Shirt"));
     }
 
+    [Theory]
+    [InlineData("http://example.com/shirt.jpg")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("/images/shirt.jpg")]
+    [InlineData("not a url")]
+    public void Image_url_must_be_absolute_https(string imageUrl)
+    {
+        var product = new Product(Guid.NewGuid(), "Shirt");
+        Assert.Throws<ArgumentException>(() => product.SetImageUrl(imageUrl));
+        Assert.Null(product.ImageUrl);
+    }
+
+    [Fact]
+    public void Image_url_is_trimmed_and_can_be_cleared()
+    {
+        var product = new Product(Guid.NewGuid(), "Shirt");
+        product.SetImageUrl(" https://images.example.com/shirt.jpg ");
+        Assert.Equal("https://images.example.com/shirt.jpg", product.ImageUrl);
+        product.SetImageUrl("  ");
+        Assert.Null(product.ImageUrl);
+    }
+
     [Fact]
     public void Variant_requires_exactly_one_value_from_each_own_option()
     {

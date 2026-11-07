@@ -5,8 +5,8 @@ using MediatR;
 
 namespace ECommerce.Application.Products;
 
-public record CreateProductCommand(Guid CategoryId, string Name, string? Description) : IRequest<ProductDto>;
-public record UpdateProductCommand(Guid Id, Guid CategoryId, string Name, string? Description) : IRequest<ProductDto>;
+public record CreateProductCommand(Guid CategoryId, string Name, string? Description, string? ImageUrl) : IRequest<ProductDto>;
+public record UpdateProductCommand(Guid Id, Guid CategoryId, string Name, string? Description, string? ImageUrl) : IRequest<ProductDto>;
 public record AddProductOptionCommand(Guid ProductId, string Name, IReadOnlyList<string> Values) : IRequest<ProductDto>;
 public record AddProductOptionValueCommand(Guid ProductId, Guid OptionId, string Value) : IRequest<ProductDto>;
 public record AddProductVariantCommand(Guid ProductId, string Sku, int StockQuantity,
@@ -22,6 +22,7 @@ public sealed class CreateProductHandler(IProductRepository products, ICategoryR
         if (!await categories.ExistsAsync(request.CategoryId, cancellationToken))
             throw new NotFoundException("Category not found.");
         var product = new Domain.Entities.Product(request.CategoryId, request.Name, request.Description);
+        product.SetImageUrl(request.ImageUrl);
         products.Add(product);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return ProductDto.From(product);
@@ -39,6 +40,7 @@ public sealed class UpdateProductHandler(IProductRepository products, ICategoryR
             throw new NotFoundException("Category not found.");
         product.ChangeCategory(request.CategoryId);
         product.UpdateDetails(request.Name, request.Description);
+        product.SetImageUrl(request.ImageUrl);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return ProductDto.From(product);
     }

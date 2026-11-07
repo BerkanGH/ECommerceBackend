@@ -25,14 +25,14 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     [Authorize(Roles = AccountRoles.Admin)]
     public async Task<ActionResult<ProductDto>> Create(ProductRequest request, CancellationToken cancellationToken)
     {
-        var product = await sender.Send(new CreateProductCommand(request.CategoryId, request.Name, request.Description), cancellationToken);
+        var product = await sender.Send(new CreateProductCommand(request.CategoryId, request.Name, request.Description, request.ImageUrl), cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = product.Id }, product);
     }
 
     [HttpPut("{id:guid}")]
     [Authorize(Roles = AccountRoles.Admin)]
     public Task<ProductDto> Update(Guid id, ProductRequest request, CancellationToken cancellationToken) =>
-        sender.Send(new UpdateProductCommand(id, request.CategoryId, request.Name, request.Description), cancellationToken);
+        sender.Send(new UpdateProductCommand(id, request.CategoryId, request.Name, request.Description, request.ImageUrl), cancellationToken);
 
     [HttpPost("{id:guid}/options")]
     [Authorize(Roles = AccountRoles.Admin)]

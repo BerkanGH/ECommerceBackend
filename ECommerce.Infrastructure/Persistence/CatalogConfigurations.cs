@@ -27,6 +27,7 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(product => product.Id).ValueGeneratedNever();
         builder.Property(product => product.Name).HasMaxLength(Product.MaxNameLength).IsRequired();
         builder.Property(product => product.Description).HasMaxLength(Product.MaxDescriptionLength);
+        builder.Property(product => product.ImageUrl).HasMaxLength(Product.MaxImageUrlLength);
         builder.Property<uint>("Version").IsRowVersion();
         builder.HasOne<Category>().WithMany().HasForeignKey(product => product.CategoryId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(product => product.Options).WithOne().HasForeignKey(option => option.ProductId).OnDelete(DeleteBehavior.Cascade);

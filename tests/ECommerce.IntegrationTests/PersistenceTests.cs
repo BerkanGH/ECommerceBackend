@@ -20,6 +20,14 @@ public class PersistenceTests(PostgresFixture fixture)
     public async Task Health_and_catalog_use_migrated_PostgreSQL()
     {
         var product = await fixture.SeedProductAsync();
+        const string imageUrl = "https://images.example.com/book.jpg";
+        await fixture.WithContextAsync(async context =>
+        {
+            var entity = await context.Products.SingleAsync(candidate => candidate.Id == product.ProductId);
+            entity.SetImageUrl(imageUrl);
+            await ((IUnitOfWork)context).SaveChangesAsync();
+            return true;
+        });
         using var client = fixture.CreateClient();
         using var live = await client.GetAsync("/health/live");
         using var ready = await client.GetAsync("/health/ready");
@@ -27,11 +35,13 @@ public class PersistenceTests(PostgresFixture fixture)
         Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
         var page = await client.GetFromJsonAsync<PagedResult<ProductSummaryDto>>("/api/products?pageSize=100");
         var summary = Assert.Single(page!.Items, item => item.Id == product.ProductId);
+        Assert.Equal(imageUrl, summary.ImageUrl);
         Assert.Equal(100m, summary.MinPriceTry);
         Assert.Equal(5m, summary.MinPriceUsd);
         Assert.True(summary.InStock);
         var detail = await client.GetFromJsonAsync<ProductDto>($"/api/products/{product.ProductId}");
         Assert.Equal(product.ProductId, detail!.Id);
+        Assert.Equal(imageUrl, detail.ImageUrl);
         using var anonymousWrite = await client.PostAsJsonAsync("/api/categories", new { name = "Denied" });
         Assert.Equal(HttpStatusCode.Unauthorized, anonymousWrite.StatusCode);
     }
