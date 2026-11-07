@@ -2,7 +2,8 @@ using ECommerce.Domain.Entities;
 
 namespace ECommerce.Application.Products;
 
-public record ProductSummaryDto(Guid Id, Guid CategoryId, string Name, string? Description, bool IsActive);
+public record ProductSummaryDto(Guid Id, Guid CategoryId, string Name, string? Description, bool IsActive,
+    decimal? MinPriceTry, decimal? MinPriceUsd, bool InStock);
 public record OptionValueDto(Guid Id, string Value);
 public record OptionDto(Guid Id, string Name, IReadOnlyList<OptionValueDto> Values);
 public record PriceDto(string Currency, decimal Amount);

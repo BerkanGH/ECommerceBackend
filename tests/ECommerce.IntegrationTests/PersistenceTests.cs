@@ -26,7 +26,10 @@ public class PersistenceTests(PostgresFixture fixture)
         Assert.Equal(HttpStatusCode.OK, live.StatusCode);
         Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
         var page = await client.GetFromJsonAsync<PagedResult<ProductSummaryDto>>("/api/products?pageSize=100");
-        Assert.NotEmpty(page!.Items);
+        var summary = Assert.Single(page!.Items, item => item.Id == product.ProductId);
+        Assert.Equal(100m, summary.MinPriceTry);
+        Assert.Equal(5m, summary.MinPriceUsd);
+        Assert.True(summary.InStock);
         var detail = await client.GetFromJsonAsync<ProductDto>($"/api/products/{product.ProductId}");
         Assert.Equal(product.ProductId, detail!.Id);
         using var anonymousWrite = await client.PostAsJsonAsync("/api/categories", new { name = "Denied" });

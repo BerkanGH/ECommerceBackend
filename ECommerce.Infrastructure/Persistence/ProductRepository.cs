@@ -1,6 +1,7 @@
 using ECommerce.Application.Abstractions;
 using ECommerce.Application.Common;
 using ECommerce.Application.Products;
+using ECommerce.Domain.Common;
 using ECommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -46,7 +47,10 @@ public sealed class ProductRepository(ECommerceDbContext context) : IProductRepo
         var count = await query.CountAsync(cancellationToken);
         var items = await query.OrderBy(product => product.Name).ThenBy(product => product.Id)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(product => new ProductSummaryDto(product.Id, product.CategoryId, product.Name, product.Description, product.IsActive))
+            .Select(product => new ProductSummaryDto(product.Id, product.CategoryId, product.Name, product.Description, product.IsActive,
+                product.Variants.SelectMany(variant => variant.Prices).Where(price => price.Currency == CurrencyCode.Try).Min(price => (decimal?)price.Amount),
+                product.Variants.SelectMany(variant => variant.Prices).Where(price => price.Currency == CurrencyCode.Usd).Min(price => (decimal?)price.Amount),
+                product.Variants.Any(variant => variant.StockQuantity > 0)))
             .ToArrayAsync(cancellationToken);
         return new PagedResult<ProductSummaryDto>(items, count, page, pageSize);
     }
