@@ -13,7 +13,7 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(category => category.Id).ValueGeneratedNever();
         builder.Property(category => category.Name).HasMaxLength(Category.MaxNameLength).IsRequired();
         builder.Property(category => category.Description).HasMaxLength(Category.MaxDescriptionLength);
-        builder.Property<Guid>("Revision").IsConcurrencyToken();
+        builder.Property<uint>("Version").IsRowVersion();
     }
 }
 
@@ -27,7 +27,7 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(product => product.Id).ValueGeneratedNever();
         builder.Property(product => product.Name).HasMaxLength(Product.MaxNameLength).IsRequired();
         builder.Property(product => product.Description).HasMaxLength(Product.MaxDescriptionLength);
-        builder.Property<Guid>("Revision").IsConcurrencyToken();
+        builder.Property<uint>("Version").IsRowVersion();
         builder.HasOne<Category>().WithMany().HasForeignKey(product => product.CategoryId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(product => product.Options).WithOne().HasForeignKey(option => option.ProductId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(product => product.Variants).WithOne().HasForeignKey(variant => variant.ProductId).OnDelete(DeleteBehavior.Cascade);
@@ -77,6 +77,7 @@ public sealed class ProductVariantConfiguration : IEntityTypeConfiguration<Produ
         builder.Property<string>("NormalizedSku").HasMaxLength(ProductVariant.MaxSkuLength)
             .HasComputedColumnSql("upper(btrim(\"Sku\"))", stored: true);
         builder.HasIndex("NormalizedSku").IsUnique();
+        builder.Property<uint>("Version").IsRowVersion();
         builder.Property(variant => variant.CombinationKey).HasMaxLength(329).IsRequired();
         builder.HasIndex(variant => new { variant.ProductId, variant.CombinationKey }).IsUnique();
         builder.HasMany(variant => variant.Prices).WithOne().HasForeignKey(price => price.ProductVariantId).OnDelete(DeleteBehavior.Cascade);

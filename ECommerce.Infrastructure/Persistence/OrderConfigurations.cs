@@ -21,7 +21,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(order => order.TotalAmount).HasPrecision(24, 2);
         builder.Property(order => order.RequestFingerprint).HasMaxLength(64).IsRequired();
         builder.Property(order => order.Status).HasConversion<string>().HasMaxLength(16).IsRequired();
-        builder.Property<Guid>("Revision").IsConcurrencyToken();
+        builder.Property<uint>("Version").IsRowVersion();
         builder.HasIndex(order => new { order.UserId, order.IdempotencyKey }).IsUnique();
         builder.HasIndex(order => new { order.UserId, order.CreatedAtUtc });
         builder.HasOne<ApplicationUser>().WithMany().HasForeignKey(order => order.UserId).OnDelete(DeleteBehavior.Restrict);
