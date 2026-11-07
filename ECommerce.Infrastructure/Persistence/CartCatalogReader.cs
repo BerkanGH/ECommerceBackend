@@ -1,4 +1,3 @@
-using System.Data;
 using ECommerce.Application.Abstractions;
 using ECommerce.Application.Carts;
 using ECommerce.Domain.Entities;
@@ -15,10 +14,6 @@ public sealed class CartCatalogReader(ECommerceDbContext context) : ICartCatalog
             return new Dictionary<Guid, CartVariantSnapshot>();
 
         var ids = variantIds.Distinct().ToArray();
-        await using var transaction = context.Database.CurrentTransaction is null
-            ? await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken)
-            : null;
-
         var variants = await (
             from variant in context.ProductVariants.AsNoTracking()
             join product in context.Products.AsNoTracking() on variant.ProductId equals product.Id
@@ -38,9 +33,6 @@ public sealed class CartCatalogReader(ECommerceDbContext context) : ICartCatalog
             where ids.Contains(selection.ProductVariantId)
             select new { selection.ProductVariantId, option.Name, value.Value }
         ).ToArrayAsync(cancellationToken);
-
-        if (transaction is not null)
-            await transaction.CommitAsync(cancellationToken);
 
         var pricesByVariant = prices.ToLookup(price => price.ProductVariantId);
         var optionsByVariant = selections.ToLookup(selection => selection.ProductVariantId);

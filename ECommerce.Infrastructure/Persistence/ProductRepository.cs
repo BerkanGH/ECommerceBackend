@@ -1,4 +1,3 @@
-using System.Data;
 using ECommerce.Application.Abstractions;
 using ECommerce.Application.Common;
 using ECommerce.Application.Products;
@@ -9,22 +8,16 @@ namespace ECommerce.Infrastructure.Persistence;
 
 public sealed class ProductRepository(ECommerceDbContext context) : IProductRepository
 {
-    public async Task<Product?> GetAsync(Guid id, bool tracking, CancellationToken cancellationToken)
+    public Task<Product?> GetAsync(Guid id, bool tracking, CancellationToken cancellationToken)
     {
-        await using var transaction = context.Database.CurrentTransaction is null
-            ? await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken)
-            : null;
         IQueryable<Product> query = context.Products;
         if (!tracking)
             query = query.AsNoTrackingWithIdentityResolution();
-        var product = await query.Include(product => product.Options).ThenInclude(option => option.Values)
+        return query.Include(product => product.Options).ThenInclude(option => option.Values)
             .Include(product => product.Variants).ThenInclude(variant => variant.Prices)
             .Include(product => product.Variants).ThenInclude(variant => variant.OptionValues)
-            .AsSplitQuery()
+            .AsSingleQuery()
             .SingleOrDefaultAsync(product => product.Id == id, cancellationToken);
-        if (transaction is not null)
-            await transaction.CommitAsync(cancellationToken);
-        return product;
     }
 
     public Task<bool> SkuExistsAsync(string sku, CancellationToken cancellationToken)
