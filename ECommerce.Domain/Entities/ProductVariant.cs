@@ -1,3 +1,5 @@
+using ECommerce.Domain.Exceptions;
+
 namespace ECommerce.Domain.Entities;
 
 public class ProductVariant
@@ -72,7 +74,7 @@ public class ProductVariant
         if (quantity < 1)
             throw new ArgumentOutOfRangeException(nameof(quantity));
         if (StockQuantity < quantity)
-            throw new ECommerce.Domain.Exceptions.DomainRuleException("Insufficient stock.");
+            throw new DomainRuleException("Insufficient stock.");
         StockQuantity -= quantity;
     }
 
@@ -81,7 +83,7 @@ public class ProductVariant
         if (quantity < 1)
             throw new ArgumentOutOfRangeException(nameof(quantity));
         if (StockQuantity > int.MaxValue - quantity)
-            throw new ECommerce.Domain.Exceptions.DomainRuleException("Stock capacity would be exceeded.");
+            throw new DomainRuleException("Stock capacity would be exceeded.");
         StockQuantity += quantity;
     }
 }
