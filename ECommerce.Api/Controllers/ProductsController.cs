@@ -47,7 +47,8 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     [HttpPost("{id:guid}/variants")]
     [Authorize(Roles = AccountRoles.Admin)]
     public Task<ProductDto> AddVariant(Guid id, VariantRequest request, CancellationToken cancellationToken) =>
-        sender.Send(new AddProductVariantCommand(id, request.Sku, request.StockQuantity, request.OptionValueIds, request.Prices), cancellationToken);
+        sender.Send(new AddProductVariantCommand(id, request.Sku, request.StockQuantity, request.OptionValueIds,
+            request.Prices.Select(price => new PriceDto(price.Currency, price.Amount)).ToArray()), cancellationToken);
 
     [HttpPut("{id:guid}/variants/{variantId:guid}/price")]
     [Authorize(Roles = AccountRoles.Admin)]

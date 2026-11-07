@@ -40,7 +40,7 @@ public sealed class AccountsController(
             return Unauthorized();
 
         var result = await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
-        if (!result.Succeeded || await users.GetTwoFactorEnabledAsync(user))
+        if (!result.Succeeded)
             return Unauthorized();
 
         var principal = await signInManager.CreateUserPrincipalAsync(user);

@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using ECommerce.Application.Products;
 
 namespace ECommerce.Api.Contracts;
 
@@ -22,7 +21,7 @@ public record VariantRequest(
     [Required, StringLength(100)] string Sku,
     [Range(0, int.MaxValue)] int StockQuantity,
     [Required, MaxLength(10)] Guid[] OptionValueIds,
-    [Required, MinLength(1), MaxLength(2)] PriceDto[] Prices);
+    [Required, MinLength(1), MaxLength(2)] PriceRequest[] Prices);
 
 public record PriceRequest([Required, StringLength(3)] string Currency, decimal Amount);
 public record StockRequest([Range(0, int.MaxValue)] int StockQuantity);
