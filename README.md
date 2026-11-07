@@ -10,6 +10,7 @@ odak noktası iş kuralları, yetkilendirme ve stok tutarlılığıdır.
 ## Özellikler
 
 - Kategori ve ürün yönetimi; ürüne özel seçenekler (renk, beden vb.) ve varyantlar.
+- Ürün başına isteğe bağlı bir görsel adresi (sadece `https://`). Dosya yükleme servisi yoktur.
 - Her varyant için ayrı TRY ve USD fiyatı ile stok miktarı. Kur dönüşümü yapılmaz.
 - ASP.NET Core Identity ile kayıt, giriş, refresh token, parola değiştirme ve çıkış.
 - Customer ve Admin rolleri. Kayıt olan herkes Customer olur.
@@ -93,14 +94,28 @@ Farklı bir adres için `frontend/.env.example` dosyasını `.env` olarak kopyal
 `npm run build` production derlemesini `frontend/dist` klasörüne üretir.
 
 Müşteri tarafında ürün listesi, kategori filtresi ve arama, varyant seçimi, sepet,
-sipariş verme, sipariş geçmişi ve iptal vardır. Admin hesabıyla giriş yapınca
-kategori, ürün, seçenek, varyant, fiyat, stok ve sipariş durumu yönetimi açılır.
+sipariş verme, sipariş geçmişi, iptal ve şifre değiştirme vardır. Admin hesabıyla giriş
+yapınca kategori, ürün, görsel adresi, seçenek, varyant, fiyat, stok ve sipariş durumu
+yönetimi açılır.
 Sayfaları rol bazında gizlemek sadece arayüz kolaylığıdır; yetki kontrolü API'dedir.
 
 Access token sadece bellekte, refresh token ise sekme kapanınca silinen `sessionStorage`'da
-tutulur; şifre tarayıcıda saklanmaz. Ürün görseli API'de olmadığı için kartlarda ürün
-adının baş harfi gösterilir. Production'da arayüz API ile aynı adresten sunulmalı veya
+tutulur; şifre tarayıcıda saklanmaz. Görseli olmayan veya yüklenemeyen ürünlerde sade bir
+varsayılan görsel gösterilir. Production'da arayüz API ile aynı adresten sunulmalı veya
 API'ye CORS ayarı eklenmelidir.
+
+### Demo verisi (isteğe bağlı)
+
+`scripts/demo-data.json` 5 kategori ve 12 örnek ürün içerir. Görseller Unsplash'ten,
+[Unsplash Lisansı](https://unsplash.com/license) ile kullanılır. Betik veriyi admin hesabıyla
+API üzerinden oluşturur; aynı isimde bir kategori zaten varsa onu ve ürünlerini atlar,
+mevcut kayıtları değiştirmez. Sadece geliştirme veritabanında, API çalışırken kullanın:
+
+```powershell
+$env:ADMIN_EMAIL = "admin@example.com"
+$env:ADMIN_PASSWORD = "ADMIN_PAROLASI"
+node scripts/seed-demo.mjs
+```
 
 ## Endpoint'ler
 

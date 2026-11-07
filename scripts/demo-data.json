@@ -1,0 +1,145 @@
+{
+  "imageSource": "Görseller Unsplash'ten alınmıştır ve Unsplash Lisansı ile kullanılır: https://unsplash.com/license",
+  "categories": [
+    { "name": "Giyim", "description": "Günlük kullanım için tişört, sweatshirt ve pantolonlar." },
+    { "name": "Ayakkabı", "description": "Spor ve günlük ayakkabılar." },
+    { "name": "Aksesuar", "description": "Çanta, gözlük ve tamamlayıcı ürünler." },
+    { "name": "Elektronik", "description": "Kulaklık ve giyilebilir teknoloji." },
+    { "name": "Ev & Yaşam", "description": "Ev ve masa için kullanışlı ürünler." }
+  ],
+  "products": [
+    {
+      "category": "Giyim",
+      "name": "Basic Beyaz Tişört",
+      "description": "Yumuşak pamuklu kumaştan, rahat kesim beyaz tişört.",
+      "imageUrl": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80&auto=format&fit=crop",
+      "options": [{ "name": "Beden", "values": ["S", "M", "L", "XL"] }],
+      "variants": [
+        { "sku": "DEMO-TSH-WHT-S", "values": ["S"], "stock": 12, "prices": { "TRY": 349.9, "USD": 11.9 } },
+        { "sku": "DEMO-TSH-WHT-M", "values": ["M"], "stock": 20, "prices": { "TRY": 349.9, "USD": 11.9 } },
+        { "sku": "DEMO-TSH-WHT-L", "values": ["L"], "stock": 8, "prices": { "TRY": 349.9, "USD": 11.9 } },
+        { "sku": "DEMO-TSH-WHT-XL", "values": ["XL"], "stock": 0, "prices": { "TRY": 349.9, "USD": 11.9 } }
+      ]
+    },
+    {
+      "category": "Giyim",
+      "name": "Baskılı Tişört",
+      "description": "Ön yüzü grafik baskılı, bej renk pamuklu tişört.",
+      "imageUrl": "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80&auto=format&fit=crop",
+      "options": [{ "name": "Beden", "values": ["S", "M", "L"] }],
+      "variants": [
+        { "sku": "DEMO-TSH-PRT-S", "values": ["S"], "stock": 6, "prices": { "TRY": 449.9, "USD": 14.9 } },
+        { "sku": "DEMO-TSH-PRT-M", "values": ["M"], "stock": 10, "prices": { "TRY": 449.9, "USD": 14.9 } },
+        { "sku": "DEMO-TSH-PRT-L", "values": ["L"], "stock": 4, "prices": { "TRY": 449.9, "USD": 14.9 } }
+      ]
+    },
+    {
+      "category": "Giyim",
+      "name": "Kapüşonlu Sweatshirt",
+      "description": "İçi şardonlu, kapüşonlu gri sweatshirt.",
+      "imageUrl": "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800&q=80&auto=format&fit=crop",
+      "options": [{ "name": "Beden", "values": ["S", "M", "L"] }],
+      "variants": [
+        { "sku": "DEMO-SWT-GRY-S", "values": ["S"], "stock": 5, "prices": { "TRY": 899.9, "USD": 29.9 } },
+        { "sku": "DEMO-SWT-GRY-M", "values": ["M"], "stock": 9, "prices": { "TRY": 899.9, "USD": 29.9 } },
+        { "sku": "DEMO-SWT-GRY-L", "values": ["L"], "stock": 3, "prices": { "TRY": 899.9, "USD": 29.9 } }
+      ]
+    },
+    {
+      "category": "Giyim",
+      "name": "Klasik Kot Pantolon",
+      "description": "Düz kesim, orta mavi kot pantolon.",
+      "imageUrl": "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800&q=80&auto=format&fit=crop",
+      "options": [{ "name": "Beden", "values": ["30", "32", "34"] }],
+      "variants": [
+        { "sku": "DEMO-JNS-30", "values": ["30"], "stock": 7, "prices": { "TRY": 1199.9, "USD": 39.9 } },
+        { "sku": "DEMO-JNS-32", "values": ["32"], "stock": 11, "prices": { "TRY": 1199.9, "USD": 39.9 } },
+        { "sku": "DEMO-JNS-34", "values": ["34"], "stock": 6, "prices": { "TRY": 1199.9, "USD": 39.9 } }
+      ]
+    },
+    {
+      "category": "Ayakkabı",
+      "name": "Siyah Koşu Ayakkabısı",
+      "description": "Hafif tabanlı, nefes alan örgü yüzeyli koşu ayakkabısı.",
+      "imageUrl": "https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=800&q=80&auto=format&fit=crop",
+      "options": [{ "name": "Numara", "values": ["40", "41", "42", "43"] }],
+      "variants": [
+        { "sku": "DEMO-RUN-40", "values": ["40"], "stock": 4, "prices": { "TRY": 2499.9, "USD": 79.9 } },
+        { "sku": "DEMO-RUN-41", "values": ["41"], "stock": 6, "prices": { "TRY": 2499.9, "USD": 79.9 } },
+        { "sku": "DEMO-RUN-42", "values": ["42"], "stock": 0, "prices": { "TRY": 2499.9, "USD": 79.9 } },
+        { "sku": "DEMO-RUN-43", "values": ["43"], "stock": 3, "prices": { "TRY": 2499.9, "USD": 79.9 } }
+      ]
+    },
+    {
+      "category": "Aksesuar",
+      "name": "Lacivert Sırt Çantası",
+      "description": "Laptop bölmeli, su itici kumaştan günlük sırt çantası.",
+      "imageUrl": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&q=80&auto=format&fit=crop",
+      "options": [],
+      "variants": [
+        { "sku": "DEMO-BAG-NVY", "values": [], "stock": 15, "prices": { "TRY": 1299.9, "USD": 42.9 } }
+      ]
+    },
+    {
+      "category": "Aksesuar",
+      "name": "Güneş Gözlüğü",
+      "description": "UV korumalı camlı, siyah çerçeveli güneş gözlüğü.",
+      "imageUrl": "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800&q=80&auto=format&fit=crop",
+      "options": [],
+      "variants": [
+        { "sku": "DEMO-SUN-BLK", "values": [], "stock": 10, "prices": { "TRY": 749.9 } }
+      ]
+    },
+    {
+      "category": "Elektronik",
+      "name": "Kablosuz Kulaklık",
+      "description": "Kulak üstü, katlanabilir kablosuz kulaklık.",
+      "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80&auto=format&fit=crop",
+      "options": [],
+      "variants": [
+        { "sku": "DEMO-HP-BLK", "values": [], "stock": 8, "prices": { "TRY": 1899.9, "USD": 59.9 } }
+      ]
+    },
+    {
+      "category": "Elektronik",
+      "name": "Akıllı Saat",
+      "description": "Adım ve nabız takibi yapan, silikon kordonlu akıllı saat.",
+      "imageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80&auto=format&fit=crop",
+      "options": [{ "name": "Renk", "values": ["Beyaz", "Siyah"] }],
+      "variants": [
+        { "sku": "DEMO-WATCH-WHT", "values": ["Beyaz"], "stock": 5, "prices": { "TRY": 3299.9, "USD": 104.9 } },
+        { "sku": "DEMO-WATCH-BLK", "values": ["Siyah"], "stock": 2, "prices": { "TRY": 3299.9, "USD": 104.9 } }
+      ]
+    },
+    {
+      "category": "Ev & Yaşam",
+      "name": "Seramik Kupa",
+      "description": "350 ml, bulaşık makinesinde yıkanabilir beyaz seramik kupa.",
+      "imageUrl": "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=800&q=80&auto=format&fit=crop",
+      "options": [],
+      "variants": [
+        { "sku": "DEMO-MUG-WHT", "values": [], "stock": 30, "prices": { "TRY": 189.9, "USD": 6.5 } }
+      ]
+    },
+    {
+      "category": "Ev & Yaşam",
+      "name": "Metal Lambader",
+      "description": "Ayarlanabilir başlıklı, antrasit renk metal lambader.",
+      "imageUrl": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&q=80&auto=format&fit=crop",
+      "options": [],
+      "variants": [
+        { "sku": "DEMO-LAMP-GRY", "values": [], "stock": 4, "prices": { "TRY": 2149.9, "USD": 69.9 } }
+      ]
+    },
+    {
+      "category": "Ev & Yaşam",
+      "name": "Çelik Termos",
+      "description": "Sıcak ve soğuk içecekler için 500 ml paslanmaz çelik termos.",
+      "imageUrl": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80&auto=format&fit=crop",
+      "options": [],
+      "variants": [
+        { "sku": "DEMO-BTL-GRN", "values": [], "stock": 18, "prices": { "TRY": 399.9, "USD": 13.5 } }
+      ]
+    }
+  ]
+}
