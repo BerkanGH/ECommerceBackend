@@ -1,8 +1,8 @@
 // Creates the demo catalog in scripts/demo-data.json through the public API.
 // Run it only against a development database:
 //   $env:ADMIN_EMAIL = "..."; $env:ADMIN_PASSWORD = "..."; node scripts/seed-demo.mjs
-// A category that already exists is skipped together with its products,
-// so the script never changes existing catalog data.
+// Existing categories are reused and products that already exist by name are skipped,
+// so the script only adds records and never changes existing ones.
 import { readFile } from 'node:fs/promises'
 
 const apiUrl = process.env.API_URL ?? 'http://localhost:5106'
@@ -27,17 +27,24 @@ async function call(method, path, body) {
 
 try {
   token = (await call('POST', '/api/auth/login', { email, password })).accessToken
-  const existing = new Set((await call('GET', '/api/categories?pageSize=100')).items.map(category => category.name))
+  const categories = new Map((await call('GET', '/api/categories?pageSize=100')).items.map(category => [category.name, category]))
 
   for (const categoryData of data.categories) {
-    if (existing.has(categoryData.name)) {
-      console.log(`Atlandı: "${categoryData.name}" kategorisi zaten var.`)
-      continue
+    let category = categories.get(categoryData.name)
+    if (category) {
+      console.log(`Mevcut kategori kullanılıyor: ${category.name}`)
+    } else {
+      category = await call('POST', '/api/categories', categoryData)
+      console.log(`Kategori oluşturuldu: ${category.name}`)
     }
-    const category = await call('POST', '/api/categories', categoryData)
-    console.log(`Kategori oluşturuldu: ${category.name}`)
+    const existingProducts = new Set(
+      (await call('GET', `/api/admin/products?categoryId=${category.id}&pageSize=100`)).items.map(product => product.name))
 
     for (const item of data.products.filter(product => product.category === categoryData.name)) {
+      if (existingProducts.has(item.name)) {
+        console.log(`  Atlandı: "${item.name}" zaten var.`)
+        continue
+      }
       let product = await call('POST', '/api/products', {
         categoryId: category.id,
         name: item.name,

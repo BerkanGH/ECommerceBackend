@@ -108,8 +108,8 @@ API'ye CORS ayarı eklenmelidir.
 
 `scripts/demo-data.json` 5 kategori ve 12 örnek ürün içerir. Görseller Unsplash'ten,
 [Unsplash Lisansı](https://unsplash.com/license) ile kullanılır. Betik veriyi admin hesabıyla
-API üzerinden oluşturur; aynı isimde bir kategori zaten varsa onu ve ürünlerini atlar,
-mevcut kayıtları değiştirmez. Sadece geliştirme veritabanında, API çalışırken kullanın:
+API üzerinden oluşturur; aynı isimde bir kategori varsa onu kullanır, aynı isimde bir
+ürün varsa atlar. Sadece kayıt ekler, mevcut kayıtları değiştirmez. Sadece geliştirme veritabanında, API çalışırken kullanın:
 
 ```powershell
 $env:ADMIN_EMAIL = "admin@example.com"
