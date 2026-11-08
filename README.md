@@ -50,7 +50,9 @@ dotnet run --project ECommerce.Api --launch-profile http
 ```
 
 - API: http://localhost:5106
-- OpenAPI: http://localhost:5106/openapi/v1.json (sadece Development)
+- Swagger UI: http://localhost:5106/swagger (sadece Development). Korumalı endpoint'ler için
+  önce `POST /api/auth/login` ile giriş yapın, yanıttaki `accessToken` değerini **Authorize**
+  penceresine yapıştırın. OpenAPI belgesi: http://localhost:5106/openapi/v1.json
 - Health: `/health/live`, `/health/ready` (veritabanı bağlantısı ve bekleyen migration kontrolü)
 
 Bağlantı dizesi yoksa uygulama açılışta hata verir.

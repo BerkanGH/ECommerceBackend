@@ -1,6 +1,7 @@
 using ECommerce.Api.Errors;
 using ECommerce.Api.Health;
 using ECommerce.Api.Identity;
+using ECommerce.Api.OpenApi;
 using ECommerce.Application.Abstractions;
 using ECommerce.Application.Categories;
 using ECommerce.Infrastructure;
@@ -50,7 +51,11 @@ builder.Services.AddMediatR(configuration =>
         configuration.LicenseKey = licenseKey;
 });
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<BearerSecurityTransformer>();
+    options.AddOperationTransformer<BearerSecurityTransformer>();
+});
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddHealthChecks().AddCheck<DatabaseReadinessCheck>("database");
@@ -70,9 +75,14 @@ if (bootstrapAdmin)
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi();
+    app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "ECommerce API v1"));
+}
 else
+{
     app.UseHttpsRedirection();
+}
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
@@ -84,7 +94,7 @@ app.MapGet("/", () => Results.Ok(new
 {
     name = "ECommerceBackend",
     version = "1.0",
-    documentation = app.Environment.IsDevelopment() ? "/openapi/v1.json" : null,
+    documentation = app.Environment.IsDevelopment() ? "/swagger" : null,
     health = "/health/ready"
 }));
 app.Run();
